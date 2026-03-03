@@ -1,0 +1,44 @@
+{
+  "base_url": "https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi",
+  "api_key": "fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261",
+  "endpoints": {
+    "get_pricing": {
+      "method": "GET",
+      "path": "/pricing/{state}/{county}",
+      "expected_status": 200,
+      "example": "/pricing/FL/Miami-Dade"
+    },
+    "list_orders": {
+      "method": "GET",
+      "path": "/orders",
+      "expected_status": 200
+    },
+    "get_order": {
+      "method": "GET",
+      "path": "/orders/{order_id}",
+      "expected_status": 200,
+      "example": "/orders/test-order-id-123"
+    },
+    "create_order": {
+      "method": "POST",
+      "path": "/orders",
+      "expected_status": 201,
+      "body": {
+        "property_address": "123 Main St, Miami, FL 33101",
+        "grantor_name": "John Doe",
+        "deed_type": "Quitclaim Deed between Individuals (Add/Remove name)",
+        "county": "Miami-Dade",
+        "state": "FL",
+        "additional_instructions": "Test order"
+      }
+    },
+    "register_webhook": {
+      "method": "POST",
+      "path": "/webhooks/register",
+      "expected_status": 200,
+      "body": {
+        "url": "https://your-endpoint.com/webhook"
+      }
+    }
+  }
+}
