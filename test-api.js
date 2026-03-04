@@ -11,10 +11,11 @@ function makeRequest(method, apiPath, body = null) {
   return new Promise((resolve, reject) => {
     const url = new URL(BASE_URL);
 
-    // Construct the request body with _path and _method (Base44 format)
+    // Construct the request body with _path, _method, and _api_key (Base44 format)
     const requestBody = {
       _path: apiPath,
       _method: method,
+      _api_key: API_KEY,
       ...(body || {}),
     };
 
@@ -23,7 +24,6 @@ function makeRequest(method, apiPath, body = null) {
       path: url.pathname,
       method: 'POST', // Base44 functions always receive POST
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
       },
     };
@@ -31,8 +31,8 @@ function makeRequest(method, apiPath, body = null) {
     console.log(`\n${'='.repeat(70)}`);
     console.log(`REQUEST: ${method} ${apiPath}`);
     console.log(`Base44 Function URL: ${BASE_URL}`);
-    console.log(`Headers: Authorization: Bearer ${API_KEY.substring(0, 20)}...`);
-    console.log(`Body:`);
+    console.log(`Headers: Content-Type: application/json`);
+    console.log(`Body (with _api_key):`);
     console.log(`${JSON.stringify(requestBody, null, 2)}`);
     console.log('='.repeat(70));
 
@@ -87,6 +87,7 @@ function checkStatus(response, expectedStatus, testName) {
 
 async function runTests() {
   const results = [];
+  let orderId = null;
 
   console.log('\n' + '█'.repeat(70));
   console.log('Enterprise API Test Suite');
@@ -108,19 +109,25 @@ async function runTests() {
   // Test 2: List Orders
   try {
     const ordersResponse = await makeRequest('GET', '/orders');
+    const passed = checkStatus(ordersResponse, 200, 'List Orders - Should return 200');
     results.push({
       name: 'List Orders',
-      pass: checkStatus(ordersResponse, 200, 'List Orders - Should return 200'),
+      pass: passed,
     });
+    // Capture an order ID for the next test
+    if (ordersResponse.parsedBody && ordersResponse.parsedBody.orders && ordersResponse.parsedBody.orders.length > 0) {
+      orderId = ordersResponse.parsedBody.orders[0].id;
+    }
   } catch (error) {
     console.error('✗ FAIL: List Orders - Request failed');
     console.error(`Error: ${error.message}`);
     results.push({ name: 'List Orders', pass: false });
   }
 
-  // Test 3: Get Specific Order (using a test ID)
+  // Test 3: Get Specific Order (using the first order ID from the list)
   try {
-    const orderResponse = await makeRequest('GET', '/orders/order123');
+    const path = orderId ? `/orders/${orderId}` : '/orders/invalid-id';
+    const orderResponse = await makeRequest('GET', path);
     results.push({
       name: 'Get Specific Order',
       pass: checkStatus(orderResponse, 200, 'Get Specific Order - Should return 200'),

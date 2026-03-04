@@ -8,7 +8,6 @@ BASE_URL = "https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/ent
 API_KEY = "fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261"
 
 HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json",
 }
 
@@ -17,9 +16,9 @@ def log_request(method, path, body=None):
     print(f"\n{'='*70}")
     print(f"REQUEST: {method} {path}")
     print(f"URL: {BASE_URL}")
-    print(f"Headers: Authorization: Bearer {API_KEY[:20]}...")
+    print(f"Headers: Content-Type: application/json")
     if body:
-        print(f"Body: {json.dumps(body, indent=2)}")
+        print(f"Body (with _api_key): {json.dumps(body, indent=2)}")
     print('='*70)
 
 def log_response(response):
@@ -48,6 +47,7 @@ def test_get_pricing():
         payload = {
             "_path": api_path,
             "_method": "GET",
+            "_api_key": API_KEY,
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
@@ -65,6 +65,7 @@ def test_list_orders():
         payload = {
             "_path": api_path,
             "_method": "GET",
+            "_api_key": API_KEY,
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
@@ -74,18 +75,19 @@ def test_list_orders():
         print(f"Error: {str(e)}")
         return False
 
-def test_get_specific_order():
+def test_get_specific_order(order_id=None):
     """Test: Get Specific Order"""
-    api_path = "/orders/test-order-id-123"
+    api_path = f"/orders/{order_id}" if order_id else "/orders/invalid-id"
     log_request("GET", api_path)
     try:
         payload = {
             "_path": api_path,
             "_method": "GET",
+            "_api_key": API_KEY,
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
-        return check_status(response, 200, "Get Specific Order - Should return 200 or 404")
+        return check_status(response, 200, "Get Specific Order - Should return 200")
     except requests.exceptions.RequestException as e:
         print(f"✗ FAIL: Get Specific Order - Request failed")
         print(f"Error: {str(e)}")
@@ -109,6 +111,7 @@ def test_create_order():
         payload = {
             "_path": api_path,
             "_method": "POST",
+            "_api_key": API_KEY,
             **order_data,
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
@@ -130,6 +133,7 @@ def test_register_webhook():
         payload = {
             "_path": api_path,
             "_method": "POST",
+            "_api_key": API_KEY,
             **webhook_data,
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
@@ -147,11 +151,31 @@ def main():
     print(f"{'█'*70}")
 
     results = []
+    order_id = None
 
     # Run tests
     results.append(("Get Pricing (FL/Miami-Dade)", test_get_pricing()))
-    results.append(("List Orders", test_list_orders()))
-    results.append(("Get Specific Order", test_get_specific_order()))
+
+    # Test List Orders and capture an order ID
+    list_orders_passed = test_list_orders()
+    results.append(("List Orders", list_orders_passed))
+
+    # Try to get an order ID for the next test
+    try:
+        payload = {
+            "_path": "/orders",
+            "_method": "GET",
+            "_api_key": API_KEY,
+        }
+        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("orders") and len(data["orders"]) > 0:
+                order_id = data["orders"][0]["id"]
+    except:
+        pass
+
+    results.append(("Get Specific Order", test_get_specific_order(order_id)))
     results.append(("Create Order", test_create_order()))
     results.append(("Register Webhook", test_register_webhook()))
 
