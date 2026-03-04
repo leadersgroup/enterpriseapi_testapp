@@ -114,7 +114,6 @@ def test_create_order():
         "state": "FL",
         "contact_email": "test@example.com",
         "additional_instructions": "Test order",
-        "plan": "premium",
         "attachments": [
             {
                 "file_url": "https://example.com/documents/deed_draft.pdf",

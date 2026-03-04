@@ -142,7 +142,7 @@ async function runTests() {
     results.push({ name: 'Get Specific Order', pass: false });
   }
 
-  // Test 4: Create Order (Premium plan user)
+  // Test 4: Create Order (Server determines pricing based on user plan)
   const createOrderPayload = {
     property_address: '123 Main St, Miami, FL 33101',
     grantor_name: 'John Doe',
@@ -152,7 +152,6 @@ async function runTests() {
     state: 'FL',
     contact_email: 'test@example.com',
     additional_instructions: 'Test order',
-    plan: 'premium',
     attachments: [
       {
         file_url: 'https://example.com/documents/deed_draft.pdf',
