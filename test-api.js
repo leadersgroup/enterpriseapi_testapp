@@ -93,16 +93,13 @@ async function runTests() {
   console.log('Enterprise API Test Suite');
   console.log('█'.repeat(70));
 
-  // Test 1: Get Pricing (Lee County - will fallback to default when implemented)
+  // Test 1: Get Pricing (Lee County - fallback to default pricing)
   try {
     const pricingResponse = await makeRequest('GET', '/pricing/FL/Lee');
-    // Once fallback is implemented, this will return 200 with default pricing
-    // For now, it returns 404 because Lee county pricing doesn't exist yet
-    const expectedStatus = pricingResponse.status === 200 ? 200 : 404;
-    const pass = pricingResponse.status === expectedStatus;
+    // Should return 200 with default pricing via fallback
     results.push({
       name: 'Get Pricing (FL/Lee)',
-      pass: pass || checkStatus(pricingResponse, 200, 'Get Pricing - Should return 200 (with fallback)'),
+      pass: checkStatus(pricingResponse, 200, 'Get Pricing - Should return 200 with default pricing'),
     });
   } catch (error) {
     console.error('✗ FAIL: Get Pricing - Request failed');
