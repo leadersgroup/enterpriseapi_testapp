@@ -101,7 +101,7 @@ def test_create_order():
         "property_address": "123 Main St, Miami, FL 33101",
         "grantor_name": "John Doe",
         "grantee_name": "Jane Doe",
-        "deed_type": "Quitclaim Deed between Individual & Trust",
+        "deed_type": "Transfer between Individual & Trust",
         "county": "Miami-Dade",
         "state": "FL",
         "contact_email": "test@example.com",
