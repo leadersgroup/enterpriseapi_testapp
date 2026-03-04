@@ -53,8 +53,6 @@ def test_get_pricing():
         log_response(response)
         # Should return 200 with default pricing via fallback
         return check_status(response, 200, "Get Pricing - Should return 200 with default pricing")
-        else:
-            return check_status(response, 200, "Get Pricing - Should return 200")
     except requests.exceptions.RequestException as e:
         print(f"✗ FAIL: Get Pricing - Request failed")
         print(f"Error: {str(e)}")
