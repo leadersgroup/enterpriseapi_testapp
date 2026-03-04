@@ -93,17 +93,17 @@ async function runTests() {
   console.log('Enterprise API Test Suite');
   console.log('█'.repeat(70));
 
-  // Test 1: Get Pricing
+  // Test 1: Get Pricing (FL default pricing)
   try {
-    const pricingResponse = await makeRequest('GET', '/pricing/FL/Miami-Dade');
+    const pricingResponse = await makeRequest('GET', '/pricing/FL/default');
     results.push({
-      name: 'Get Pricing (FL/Miami-Dade)',
+      name: 'Get Pricing (FL/default)',
       pass: checkStatus(pricingResponse, 200, 'Get Pricing - Should return 200'),
     });
   } catch (error) {
     console.error('✗ FAIL: Get Pricing - Request failed');
     console.error(`Error: ${error.message}`);
-    results.push({ name: 'Get Pricing (FL/Miami-Dade)', pass: false });
+    results.push({ name: 'Get Pricing (FL/default)', pass: false });
   }
 
   // Test 2: List Orders

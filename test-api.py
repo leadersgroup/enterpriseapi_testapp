@@ -40,8 +40,8 @@ def check_status(response, expected_status, test_name):
     return passed
 
 def test_get_pricing():
-    """Test: Get Pricing"""
-    api_path = "/pricing/FL/Miami-Dade"
+    """Test: Get Pricing (FL default pricing)"""
+    api_path = "/pricing/FL/default"
     log_request("GET", api_path)
     try:
         payload = {
