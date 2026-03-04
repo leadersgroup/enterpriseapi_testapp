@@ -405,10 +405,21 @@
                             <input type="text" id="pricing_county" value="Lee" placeholder="County name">
                         </div>
 
+                        <div class="form-group">
+                            <label>Deed Type (required) *</label>
+                            <select id="pricing_deed_type">
+                                <option>Quitclaim Deed between Individuals (Add/Remove name)</option>
+                                <option>Warranty Deed</option>
+                                <option>Gift Deed</option>
+                                <option>Transfer on Death Deed</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+
                         <div class="quick-params">
+                            <button class="quick-param-btn" onclick="setPricingQuick('FL', 'Walton')">FL / Walton ✓</button>
                             <button class="quick-param-btn" onclick="setPricingQuick('FL', 'Lee')">FL / Lee</button>
                             <button class="quick-param-btn" onclick="setPricingQuick('FL', 'Miami-Dade')">FL / Miami-Dade</button>
-                            <button class="quick-param-btn" onclick="setPricingQuick('FL', 'Broward')">FL / Broward</button>
                             <button class="quick-param-btn" onclick="setPricingQuick('FL', 'default')">FL / default</button>
                         </div>
 
@@ -577,10 +588,16 @@
 
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
 
-                <h3 style="color: #667eea; margin-bottom: 15px;">🧪 Quick Tests</h3>
+                <h3 style="color: #667eea; margin-bottom: 15px;">🧪 Test Execution</h3>
 
                 <div class="button-group" style="flex-direction: column;">
-                    <button class="btn-primary" onclick="runAllTests()" style="background: #764ba2;">Run All Tests</button>
+                    <button class="btn-primary" onclick="runAllTests()" style="background: #764ba2; margin-bottom: 8px;">Run All 5 Tests</button>
+                    <button class="btn-secondary" onclick="runQuickTest()" style="margin-bottom: 8px;">Quick Pricing Test</button>
+                </div>
+
+                <div id="test_execution" style="margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; font-size: 0.9em; display: none;">
+                    <p><strong>Last Test Run:</strong></p>
+                    <p id="test_results_summary" style="color: #333; margin: 0;"></p>
                 </div>
 
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
@@ -704,8 +721,9 @@
         async function testGetPricing() {
             const state = document.getElementById('pricing_state').value;
             const county = document.getElementById('pricing_county').value;
+            const deedType = document.getElementById('pricing_deed_type').value;
             const path = `/pricing/${state}/${county}`;
-            await makeRequest('GET', path);
+            await makeRequest('GET', path, { deed_type: deedType });
         }
 
         // Orders Tests
@@ -830,15 +848,24 @@
             document.getElementById('test_summary').innerHTML = html;
         }
 
+        // Quick Pricing Test
+        async function runQuickTest() {
+            const defaultDeedType = document.getElementById('pricing_deed_type').value || 'Quitclaim Deed between Individuals (Add/Remove name)';
+            await makeRequest('GET', '/pricing/FL/Walton', { deed_type: defaultDeedType });
+            document.getElementById('test_execution').style.display = 'block';
+            document.getElementById('test_results_summary').textContent = '✓ Quick test completed - check response on the right';
+        }
+
         // Run All Tests
         async function runAllTests() {
             testResults = { passed: 0, failed: 0, total: 0 };
 
-            alert('Running all tests... Check responses as they complete.');
+            document.getElementById('test_execution').style.display = 'block';
+            document.getElementById('test_results_summary').innerHTML = '<p style="color: #ff9800; margin: 0;">⏳ Running tests...</p>';
 
-            // Test 1: Get Pricing
+            // Test 1: Get Pricing (Walton - has specific data)
             testResults.total++;
-            const pricing = await makeRequest('GET', '/pricing/FL/Lee');
+            const pricing = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Quitclaim Deed between Individuals (Add/Remove name)' });
             if (pricing.status === 200) testResults.passed++; else testResults.failed++;
 
             await sleep(500);
@@ -894,15 +921,17 @@
             if (webhook.status === 201) testResults.passed++; else testResults.failed++;
 
             // Display summary
+            const statusClass = testResults.passed === testResults.total ? 'status-success' : 'status-error';
             const summary = `
-                <div style="background: #f9f9f9; padding: 12px; border-radius: 6px;">
-                    <p style="font-size: 1.1em; color: #333;"><strong>Test Results:</strong></p>
-                    <p style="color: #4CAF50; font-size: 1em;">✓ Passed: ${testResults.passed}</p>
-                    <p style="color: #f44336; font-size: 1em;">✗ Failed: ${testResults.failed}</p>
-                    <p style="color: #667eea; font-size: 1em; font-weight: bold;">Total: ${testResults.passed}/${testResults.total}</p>
+                <div style="background: ${testResults.passed === testResults.total ? '#e8f5e9' : '#ffebee'}; padding: 12px; border-radius: 6px; border-left: 4px solid ${testResults.passed === testResults.total ? '#4CAF50' : '#f44336'};">
+                    <p style="font-size: 1.1em; color: #333; margin: 0 0 8px 0;"><strong>Test Results:</strong></p>
+                    <p style="color: #4CAF50; font-size: 0.95em; margin: 4px 0;">✓ Passed: ${testResults.passed}</p>
+                    <p style="color: #f44336; font-size: 0.95em; margin: 4px 0;">✗ Failed: ${testResults.failed}</p>
+                    <p style="color: #667eea; font-size: 1.05em; font-weight: bold; margin: 8px 0 0 0;">${testResults.passed}/${testResults.total} tests passing</p>
                 </div>
             `;
-            document.getElementById('test_summary').innerHTML = summary;
+            document.getElementById('test_execution').innerHTML = summary;
+            document.getElementById('test_execution').style.display = 'block';
         }
 
         function sleep(ms) {
@@ -912,7 +941,7 @@
         // Initialize
         window.addEventListener('load', () => {
             updateTestSummary();
-            displayRequest('GET', '/pricing/FL/Lee', {});
+            displayRequest('GET', '/pricing/FL/Walton', {});
             document.getElementById('response_display').textContent = 'Waiting for API response...';
         });
     </script>
