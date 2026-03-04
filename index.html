@@ -408,11 +408,9 @@
                         <div class="form-group">
                             <label>Deed Type (required) *</label>
                             <select id="pricing_deed_type">
-                                <option>Quitclaim Deed between Individuals (Add/Remove name)</option>
-                                <option>Warranty Deed</option>
-                                <option>Gift Deed</option>
-                                <option>Transfer on Death Deed</option>
-                                <option>Other</option>
+                                <option value="Quitclaim Deed between Individual & Trust">Transfer between Individual & Trust</option>
+                                <option value="Quitclaim Deed between Individual & Company">Transfer between Individual & Company</option>
+                                <option value="Quitclaim Deed between Individuals (Add/Remove name)">Transfer between Individuals (Add/Remove name)</option>
                             </select>
                         </div>
 
@@ -495,11 +493,9 @@
                         <div class="form-group">
                             <label>Deed Type *</label>
                             <select id="order_deed_type">
-                                <option>Quitclaim Deed between Individuals (Add/Remove name)</option>
-                                <option>Warranty Deed</option>
-                                <option>Gift Deed</option>
-                                <option>Transfer on Death Deed</option>
-                                <option>Other</option>
+                                <option value="Quitclaim Deed between Individual & Trust">Transfer between Individual & Trust</option>
+                                <option value="Quitclaim Deed between Individual & Company">Transfer between Individual & Company</option>
+                                <option value="Quitclaim Deed between Individuals (Add/Remove name)">Transfer between Individuals (Add/Remove name)</option>
                             </select>
                         </div>
 
@@ -865,7 +861,7 @@
 
             // Test 1: Get Pricing (Walton - has specific data)
             testResults.total++;
-            const pricing = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Quitclaim Deed between Individuals (Add/Remove name)' });
+            const pricing = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer between Individual & Trust' });
             if (pricing.status === 200) testResults.passed++; else testResults.failed++;
 
             await sleep(500);
@@ -899,7 +895,7 @@
                 property_address: '789 Oak St, Tampa, FL 33602',
                 grantor_name: 'Jane Smith',
                 grantee_name: 'John Smith',
-                deed_type: 'Quitclaim Deed between Individuals (Add/Remove name)',
+                deed_type: 'Transfer between Individual & Company',
                 county: 'Hillsborough',
                 state: 'FL',
                 contact_email: 'jane@example.com',

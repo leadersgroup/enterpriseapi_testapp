@@ -144,7 +144,7 @@ async function runTests() {
     property_address: '123 Main St, Miami, FL 33101',
     grantor_name: 'John Doe',
     grantee_name: 'Jane Doe',
-    deed_type: 'Quitclaim Deed between Individuals (Add/Remove name)',
+    deed_type: 'Quitclaim Deed between Individual & Trust',
     county: 'Miami-Dade',
     state: 'FL',
     contact_email: 'test@example.com',
