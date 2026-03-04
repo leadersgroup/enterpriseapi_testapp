@@ -8,7 +8,7 @@ BASE_URL = "https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/ent
 API_KEY = "fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261"
 
 HEADERS = {
-    "x-api-key": API_KEY,
+    "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json",
 }
 
@@ -16,8 +16,8 @@ def log_request(method, path, body=None):
     """Log the request details."""
     print(f"\n{'='*70}")
     print(f"REQUEST: {method} {path}")
-    print(f"URL: {BASE_URL}{path}")
-    print(f"Headers: x-api-key: {API_KEY[:20]}...")
+    print(f"URL: {BASE_URL}")
+    print(f"Headers: Authorization: Bearer {API_KEY[:20]}...")
     if body:
         print(f"Body: {json.dumps(body, indent=2)}")
     print('='*70)
@@ -42,10 +42,14 @@ def check_status(response, expected_status, test_name):
 
 def test_get_pricing():
     """Test: Get Pricing"""
-    path = "/pricing/FL/Miami-Dade"
-    log_request("GET", path)
+    api_path = "/pricing/FL/Miami-Dade"
+    log_request("GET", api_path)
     try:
-        response = requests.get(f"{BASE_URL}{path}", headers=HEADERS, timeout=10)
+        payload = {
+            "path": api_path,
+            "method": "GET",
+        }
+        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
         return check_status(response, 200, "Get Pricing - Should return 200")
     except requests.exceptions.RequestException as e:
@@ -55,10 +59,14 @@ def test_get_pricing():
 
 def test_list_orders():
     """Test: List Orders"""
-    path = "/orders"
-    log_request("GET", path)
+    api_path = "/orders"
+    log_request("GET", api_path)
     try:
-        response = requests.get(f"{BASE_URL}{path}", headers=HEADERS, timeout=10)
+        payload = {
+            "path": api_path,
+            "method": "GET",
+        }
+        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
         return check_status(response, 200, "List Orders - Should return 200")
     except requests.exceptions.RequestException as e:
@@ -68,13 +76,16 @@ def test_list_orders():
 
 def test_get_specific_order():
     """Test: Get Specific Order"""
-    path = "/orders/test-order-id-123"
-    log_request("GET", path)
+    api_path = "/orders/test-order-id-123"
+    log_request("GET", api_path)
     try:
-        response = requests.get(f"{BASE_URL}{path}", headers=HEADERS, timeout=10)
+        payload = {
+            "path": api_path,
+            "method": "GET",
+        }
+        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
-        # Accept both 200 and 404 since the order might not exist
-        return check_status(response, 200, "Get Specific Order - Should return 200 or 404 (got 200)")
+        return check_status(response, 200, "Get Specific Order - Should return 200 or 404")
     except requests.exceptions.RequestException as e:
         print(f"✗ FAIL: Get Specific Order - Request failed")
         print(f"Error: {str(e)}")
@@ -82,8 +93,8 @@ def test_get_specific_order():
 
 def test_create_order():
     """Test: Create Order"""
-    path = "/orders"
-    body = {
+    api_path = "/orders"
+    order_data = {
         "property_address": "123 Main St, Miami, FL 33101",
         "grantor_name": "John Doe",
         "deed_type": "Quitclaim Deed between Individuals (Add/Remove name)",
@@ -91,9 +102,14 @@ def test_create_order():
         "state": "FL",
         "additional_instructions": "Test order",
     }
-    log_request("POST", path, body)
+    log_request("POST", api_path, order_data)
     try:
-        response = requests.post(f"{BASE_URL}{path}", json=body, headers=HEADERS, timeout=10)
+        payload = {
+            "path": api_path,
+            "method": "POST",
+            **order_data,
+        }
+        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
         return check_status(response, 201, "Create Order - Should return 201")
     except requests.exceptions.RequestException as e:
@@ -103,13 +119,18 @@ def test_create_order():
 
 def test_register_webhook():
     """Test: Register Webhook"""
-    path = "/webhooks/register"
-    body = {
+    api_path = "/webhooks/register"
+    webhook_data = {
         "url": "https://your-endpoint.com/webhook",
     }
-    log_request("POST", path, body)
+    log_request("POST", api_path, webhook_data)
     try:
-        response = requests.post(f"{BASE_URL}{path}", json=body, headers=HEADERS, timeout=10)
+        payload = {
+            "path": api_path,
+            "method": "POST",
+            **webhook_data,
+        }
+        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
         return check_status(response, 200, "Register Webhook - Should return 200 or 201")
     except requests.exceptions.RequestException as e:

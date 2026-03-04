@@ -33,51 +33,63 @@ node test-api-interactive.js
 
 Choose from preset options or enter a custom endpoint path.
 
-## Test Results
+## Important: API Status
 
-Latest test results: **3/5 passing** ✓
+⚠️ **Backend functions not yet deployed** - The Base44 backend functions for this API have not been deployed yet. The frontend application is running, but API endpoints return "Backend function not found" errors.
 
-### Summary
-- ✓ GET /pricing/{state}/{county} - Working
-- ✓ GET /orders - Working
-- ✓ GET /orders/{order_id} - Working
-- ✗ POST /orders - Returns 405 Method Not Allowed
-- ✗ POST /webhooks/register - Returns 405 Method Not Allowed
+See [API_FINDINGS.md](API_FINDINGS.md) for detailed investigation results.
 
-The GET endpoints are returning HTML pages (status 200), while POST endpoints are blocked. This indicates:
+### Test Results (Current)
+- ❌ All endpoints return "Backend function not deployed" when using correct headers
+- ⚠️ GET requests appear to work (return 200) but receive HTML frontend content, not API responses
+- ❌ POST requests return 405 Method Not Allowed
 
-### Possible Issues with POST Endpoints
+### What's Missing
+The following Base44 backend functions need to be deployed:
 
-1. **Different API endpoint for mutations**
-   - GET requests work through the frontend URL, but POST/PUT/DELETE may require a different endpoint
-   - Check if there's a separate API URL for write operations
+### Backend Functions to Deploy
 
-2. **CORS or authentication headers**
-   - POST requests may require additional headers or different authentication
-   - Check if there are additional CORS or content-type requirements
+1. **Pricing Function** - Get pricing for a location
+   - Suggested path: `/api/functions/pricing` or `/api/functions/get-pricing`
+   - Method: GET
+   - Params: `state`, `county`
 
-3. **Route configuration**
-   - The API may not have POST handlers configured at the `/api/functions/enterpriseApi` routes
-   - There might be separate API routes for mutations
+2. **List Orders Function** - Get all orders
+   - Suggested path: `/api/functions/orders` or `/api/functions/list-orders`
+   - Method: GET
 
-### Troubleshooting Steps for POST Endpoints
+3. **Get Order Function** - Get a specific order
+   - Suggested path: `/api/functions/orders` or `/api/functions/get-order`
+   - Method: GET
+   - Params: `id` or order_id
 
-1. **Check API documentation** for the actual POST endpoint URLs and authentication requirements
+4. **Create Order Function** - Create a new order
+   - Suggested path: `/api/functions/orders` or `/api/functions/create-order`
+   - Method: POST
+   - Body: Order details
 
-2. **Try the interactive tester** to manually test different endpoints:
+5. **Register Webhook Function** - Register a webhook
+   - Suggested path: `/api/functions/webhooks` or `/api/functions/register-webhook`
+   - Method: POST
+   - Body: `{ url: "..." }`
+
+### Once Backend is Deployed
+
+1. **Update BASE_URL** in test scripts if function paths differ from suggestions
+2. **Run automated tests**:
+   ```bash
+   node test-api.js
+   node test-api-flexible.js
+   ```
+3. **Use interactive tester** for manual testing:
    ```bash
    node test-api-interactive.js
    ```
-
-3. **Verify POST endpoint paths** - they may differ from GET paths:
-   - Try `/api/orders` instead of `/api/functions/enterpriseApi/orders`
-   - Try root path `/orders` without the `/api/functions/enterpriseApi` prefix
-   - Check if there's a different subdomain for API mutations
-
-4. **Check authentication** - POST may require:
-   - Different header names (e.g., `Authorization` vs `x-api-key`)
-   - Additional tokens or signatures
-   - CORS preflight handling
+4. **Required Headers** (already configured in test scripts):
+   ```
+   x-api-key: fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261
+   Content-Type: application/json
+   ```
 
 ## Test Coverage
 

@@ -3,7 +3,7 @@
 const https = require('https');
 const readline = require('readline');
 
-const BASE_URL = 'https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi';
+const BASE_URL = 'https://50-deedscom-enterprise-db0653f4.base44.app/api/functions';
 const API_KEY = 'fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261';
 
 function makeRequest(method, path, body = null) {

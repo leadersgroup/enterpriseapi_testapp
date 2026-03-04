@@ -1,12 +1,12 @@
 {
-  "base_url": "https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi",
+  "base_url": "https://50-deedscom-enterprise-db0653f4.base44.app/api/functions",
   "api_key": "fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261",
   "endpoints": {
     "get_pricing": {
       "method": "GET",
-      "path": "/pricing/{state}/{county}",
+      "path": "/pricing",
       "expected_status": 200,
-      "example": "/pricing/FL/Miami-Dade"
+      "example": "/pricing?state=FL&county=Miami-Dade"
     },
     "list_orders": {
       "method": "GET",
@@ -15,9 +15,9 @@
     },
     "get_order": {
       "method": "GET",
-      "path": "/orders/{order_id}",
+      "path": "/orders",
       "expected_status": 200,
-      "example": "/orders/test-order-id-123"
+      "example": "/orders?order_id=test-order-id-123"
     },
     "create_order": {
       "method": "POST",

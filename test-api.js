@@ -6,27 +6,34 @@ const BASE_URL = 'https://50-deedscom-enterprise-db0653f4.base44.app/api/functio
 const API_KEY = 'fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261';
 
 // Utility function to make HTTPS requests
-function makeRequest(method, path, body = null) {
+// Base44 functions take the path as a request body parameter, not URL path
+function makeRequest(method, apiPath, body = null) {
   return new Promise((resolve, reject) => {
-    const url = new URL(path, BASE_URL);
+    const url = new URL(BASE_URL);
+
+    // Construct the request body with path and method
+    const requestBody = {
+      path: apiPath,
+      method: method,
+      ...(body || {}),
+    };
 
     const options = {
       hostname: url.hostname,
-      path: url.pathname + url.search,
-      method: method,
+      path: url.pathname,
+      method: 'POST', // Base44 functions always receive POST
       headers: {
-        'x-api-key': API_KEY,
+        'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
       },
     };
 
     console.log(`\n${'='.repeat(70)}`);
-    console.log(`REQUEST: ${method} ${path}`);
-    console.log(`URL: ${BASE_URL}${path}`);
-    console.log(`Headers: x-api-key: ${API_KEY.substring(0, 20)}...`);
-    if (body) {
-      console.log(`Body: ${JSON.stringify(body, null, 2)}`);
-    }
+    console.log(`REQUEST: ${method} ${apiPath}`);
+    console.log(`Base44 Function URL: ${BASE_URL}`);
+    console.log(`Headers: Authorization: Bearer ${API_KEY.substring(0, 20)}...`);
+    console.log(`Body:`);
+    console.log(`${JSON.stringify(requestBody, null, 2)}`);
     console.log('='.repeat(70));
 
     const req = https.request(options, (res) => {
@@ -38,7 +45,6 @@ function makeRequest(method, path, body = null) {
 
       res.on('end', () => {
         console.log(`\nRESPONSE Status: ${res.statusCode}`);
-        console.log(`Headers: ${JSON.stringify(res.headers, null, 2)}`);
         try {
           const parsed = JSON.parse(data);
           console.log(`Body: ${JSON.stringify(parsed, null, 2)}`);
@@ -57,9 +63,8 @@ function makeRequest(method, path, body = null) {
 
     req.on('error', reject);
 
-    if (body) {
-      req.write(JSON.stringify(body));
-    }
+    // Write the request body with path and method
+    req.write(JSON.stringify(requestBody));
     req.end();
   });
 }
@@ -115,10 +120,10 @@ async function runTests() {
 
   // Test 3: Get Specific Order (using a test ID)
   try {
-    const orderResponse = await makeRequest('GET', '/orders/test-order-id-123');
+    const orderResponse = await makeRequest('GET', '/orders/order123');
     results.push({
       name: 'Get Specific Order',
-      pass: checkStatus(orderResponse, 200, 'Get Specific Order - Should return 200 or 404'),
+      pass: checkStatus(orderResponse, 200, 'Get Specific Order - Should return 200'),
     });
   } catch (error) {
     console.error('✗ FAIL: Get Specific Order - Request failed');
