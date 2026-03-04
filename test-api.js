@@ -148,6 +148,13 @@ async function runTests() {
     state: 'FL',
     contact_email: 'test@example.com',
     additional_instructions: 'Test order',
+    attachments: [
+      {
+        file_url: 'https://example.com/documents/deed_draft.pdf',
+        file_name: 'deed_draft.pdf',
+        file_size: 102400,
+      },
+    ],
   };
 
   try {

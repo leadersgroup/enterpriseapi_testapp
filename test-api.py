@@ -105,6 +105,13 @@ def test_create_order():
         "state": "FL",
         "contact_email": "test@example.com",
         "additional_instructions": "Test order",
+        "attachments": [
+            {
+                "file_url": "https://example.com/documents/deed_draft.pdf",
+                "file_name": "deed_draft.pdf",
+                "file_size": 102400,
+            }
+        ],
     }
     log_request("POST", api_path, order_data)
     try:

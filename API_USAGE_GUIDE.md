@@ -87,7 +87,14 @@ Include API key in request body:
   "county": "Miami-Dade",
   "state": "FL",
   "contact_email": "test@example.com",
-  "additional_instructions": "Test order"
+  "additional_instructions": "Test order",
+  "attachments": [
+    {
+      "file_url": "https://example.com/documents/deed_draft.pdf",
+      "file_name": "deed_draft.pdf",
+      "file_size": 102400
+    }
+  ]
 }
 ```
 
@@ -102,6 +109,7 @@ Include API key in request body:
 
 **Optional Fields:**
 - `additional_instructions` - Any special notes
+- `attachments` - Array of file attachments (see Attachments section below)
 
 **Response (201 Created):**
 ```json
@@ -121,6 +129,53 @@ Include API key in request body:
     },
     "payment_status": "paid"
   }
+}
+```
+
+---
+
+## Attachments
+
+Orders can optionally include file attachments. Each attachment must include:
+
+```json
+{
+  "file_url": "https://example.com/path/to/file.pdf",
+  "file_name": "deed_draft.pdf",
+  "file_size": 102400
+}
+```
+
+**Attachment Fields:**
+- `file_url` (required) - URL to download the file
+- `file_name` (required) - Name of the file (with extension)
+- `file_size` (optional) - Size of file in bytes
+
+**Example: Order with Multiple Attachments**
+```json
+{
+  "_path": "/orders",
+  "_method": "POST",
+  "_api_key": "...",
+  "property_address": "123 Main St, Miami, FL 33101",
+  "grantor_name": "John Doe",
+  "grantee_name": "Jane Doe",
+  "deed_type": "Quitclaim Deed between Individuals",
+  "county": "Miami-Dade",
+  "state": "FL",
+  "contact_email": "test@example.com",
+  "attachments": [
+    {
+      "file_url": "https://example.com/documents/deed_draft.pdf",
+      "file_name": "deed_draft.pdf",
+      "file_size": 102400
+    },
+    {
+      "file_url": "https://example.com/documents/supporting_docs.pdf",
+      "file_name": "supporting_docs.pdf",
+      "file_size": 256000
+    }
+  ]
 }
 ```
 
