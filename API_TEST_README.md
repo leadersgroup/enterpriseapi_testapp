@@ -33,16 +33,22 @@ node test-api-interactive.js
 
 Choose from preset options or enter a custom endpoint path.
 
-## Important: API Status
+## API Status: ✅ LIVE (Partially Working)
 
-⚠️ **Backend functions not yet deployed** - The Base44 backend functions for this API have not been deployed yet. The frontend application is running, but API endpoints return "Backend function not found" errors.
+The Base44 backend is deployed and responding!
 
-See [API_FINDINGS.md](API_FINDINGS.md) for detailed investigation results.
+### Test Results: 2/5 Passing ✓
 
-### Test Results (Current)
-- ❌ All endpoints return "Backend function not deployed" when using correct headers
-- ⚠️ GET requests appear to work (return 200) but receive HTML frontend content, not API responses
-- ❌ POST requests return 405 Method Not Allowed
+**✅ Working Endpoints:**
+- POST /orders - Creates orders successfully (Status 201)
+- POST /webhooks/register - Registers webhooks successfully (Status 201)
+
+**❌ Not Working:**
+- GET /pricing/{state}/{county} - Returns "Endpoint not found"
+- GET /orders - Returns validation error
+- GET /orders/{order_id} - Returns "Endpoint not found"
+
+See [WORKING_API_TESTS.md](WORKING_API_TESTS.md) and [GET_ENDPOINTS_INVESTIGATION.md](GET_ENDPOINTS_INVESTIGATION.md) for details.
 
 ### What's Missing
 The following Base44 backend functions need to be deployed:

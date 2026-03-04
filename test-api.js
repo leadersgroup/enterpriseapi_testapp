@@ -11,10 +11,10 @@ function makeRequest(method, apiPath, body = null) {
   return new Promise((resolve, reject) => {
     const url = new URL(BASE_URL);
 
-    // Construct the request body with path and method
+    // Construct the request body with _path and _method (Base44 format)
     const requestBody = {
-      path: apiPath,
-      method: method,
+      _path: apiPath,
+      _method: method,
       ...(body || {}),
     };
 
@@ -135,9 +135,11 @@ async function runTests() {
   const createOrderPayload = {
     property_address: '123 Main St, Miami, FL 33101',
     grantor_name: 'John Doe',
+    grantee_name: 'Jane Doe',
     deed_type: 'Quitclaim Deed between Individuals (Add/Remove name)',
     county: 'Miami-Dade',
     state: 'FL',
+    contact_email: 'test@example.com',
     additional_instructions: 'Test order',
   };
 
@@ -164,7 +166,7 @@ async function runTests() {
     const isExpectedStatus = webhookResponse.status === 200 || webhookResponse.status === 201;
     results.push({
       name: 'Register Webhook',
-      pass: checkStatus(webhookResponse, 200, 'Register Webhook - Should return 200 or 201'),
+      pass: checkStatus(webhookResponse, 201, 'Register Webhook - Should return 201'),
     });
   } catch (error) {
     console.error('✗ FAIL: Register Webhook - Request failed');

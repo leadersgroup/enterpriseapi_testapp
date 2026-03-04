@@ -46,8 +46,8 @@ def test_get_pricing():
     log_request("GET", api_path)
     try:
         payload = {
-            "path": api_path,
-            "method": "GET",
+            "_path": api_path,
+            "_method": "GET",
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
@@ -63,8 +63,8 @@ def test_list_orders():
     log_request("GET", api_path)
     try:
         payload = {
-            "path": api_path,
-            "method": "GET",
+            "_path": api_path,
+            "_method": "GET",
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
@@ -80,8 +80,8 @@ def test_get_specific_order():
     log_request("GET", api_path)
     try:
         payload = {
-            "path": api_path,
-            "method": "GET",
+            "_path": api_path,
+            "_method": "GET",
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
@@ -97,16 +97,18 @@ def test_create_order():
     order_data = {
         "property_address": "123 Main St, Miami, FL 33101",
         "grantor_name": "John Doe",
+        "grantee_name": "Jane Doe",
         "deed_type": "Quitclaim Deed between Individuals (Add/Remove name)",
         "county": "Miami-Dade",
         "state": "FL",
+        "contact_email": "test@example.com",
         "additional_instructions": "Test order",
     }
     log_request("POST", api_path, order_data)
     try:
         payload = {
-            "path": api_path,
-            "method": "POST",
+            "_path": api_path,
+            "_method": "POST",
             **order_data,
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
@@ -126,13 +128,13 @@ def test_register_webhook():
     log_request("POST", api_path, webhook_data)
     try:
         payload = {
-            "path": api_path,
-            "method": "POST",
+            "_path": api_path,
+            "_method": "POST",
             **webhook_data,
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
-        return check_status(response, 200, "Register Webhook - Should return 200 or 201")
+        return check_status(response, 201, "Register Webhook - Should return 201")
     except requests.exceptions.RequestException as e:
         print(f"✗ FAIL: Register Webhook - Request failed")
         print(f"Error: {str(e)}")

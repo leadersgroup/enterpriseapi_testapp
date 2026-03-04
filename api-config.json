@@ -1,5 +1,5 @@
 {
-  "base_url": "https://50-deedscom-enterprise-db0653f4.base44.app/api/functions",
+  "base_url": "https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi",
   "api_key": "fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261",
   "endpoints": {
     "get_pricing": {
@@ -26,9 +26,11 @@
       "body": {
         "property_address": "123 Main St, Miami, FL 33101",
         "grantor_name": "John Doe",
+        "grantee_name": "Jane Doe",
         "deed_type": "Quitclaim Deed between Individuals (Add/Remove name)",
         "county": "Miami-Dade",
         "state": "FL",
+        "contact_email": "test@example.com",
         "additional_instructions": "Test order"
       }
     },
