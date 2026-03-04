@@ -414,13 +414,6 @@
                             </select>
                         </div>
 
-                        <div class="quick-params">
-                            <button class="quick-param-btn" onclick="setPricingQuick('FL', 'Walton')">FL / Walton ✓</button>
-                            <button class="quick-param-btn" onclick="setPricingQuick('FL', 'Lee')">FL / Lee</button>
-                            <button class="quick-param-btn" onclick="setPricingQuick('FL', 'Miami-Dade')">FL / Miami-Dade</button>
-                            <button class="quick-param-btn" onclick="setPricingQuick('FL', 'default')">FL / default</button>
-                        </div>
-
                         <div class="button-group">
                             <button class="btn-primary" onclick="testGetPricing()">Send Request</button>
                         </div>
@@ -632,6 +625,37 @@
     </div>
 
     <script>
+        // Load settings from localStorage on page load
+        function loadSettings() {
+            const savedApiKey = localStorage.getItem('enterpriseApi_key');
+            const savedBaseUrl = localStorage.getItem('enterpriseApi_url');
+
+            if (savedApiKey) {
+                document.getElementById('api_key').value = savedApiKey;
+            }
+            if (savedBaseUrl) {
+                document.getElementById('base_url').value = savedBaseUrl;
+            }
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            localStorage.setItem('enterpriseApi_key', document.getElementById('api_key').value);
+            localStorage.setItem('enterpriseApi_url', document.getElementById('base_url').value);
+        }
+
+        // Load settings on page load
+        window.addEventListener('load', loadSettings);
+
+        // Save settings when inputs change
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiKeyInput = document.getElementById('api_key');
+            const baseUrlInput = document.getElementById('base_url');
+
+            if (apiKeyInput) apiKeyInput.addEventListener('change', saveSettings);
+            if (baseUrlInput) baseUrlInput.addEventListener('change', saveSettings);
+        });
+
         const API_CONFIG = {
             baseUrl: () => document.getElementById('base_url').value,
             apiKey: () => document.getElementById('api_key').value,

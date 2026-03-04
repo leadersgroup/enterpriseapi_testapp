@@ -95,7 +95,7 @@ async function runTests() {
 
   // Test 1: Get Pricing (FL/Walton - has specific pricing)
   try {
-    const pricingResponse = await makeRequest('GET', '/pricing/FL/Walton');
+    const pricingResponse = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer between Individual & Trust' });
     // Returns Walton County specific pricing
     results.push({
       name: 'Get Pricing (FL/Walton)',

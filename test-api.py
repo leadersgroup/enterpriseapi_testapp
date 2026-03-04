@@ -48,11 +48,12 @@ def test_get_pricing():
             "_path": api_path,
             "_method": "GET",
             "_api_key": API_KEY,
+            "deed_type": "Transfer between Individual & Trust",
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
-        # Should return 200 with default pricing via fallback
-        return check_status(response, 200, "Get Pricing - Should return 200 with default pricing")
+        # Should return 200 with Walton pricing
+        return check_status(response, 200, "Get Pricing - Should return 200 with Walton pricing")
     except requests.exceptions.RequestException as e:
         print(f"✗ FAIL: Get Pricing - Request failed")
         print(f"Error: {str(e)}")
