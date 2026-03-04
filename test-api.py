@@ -5,7 +5,7 @@ import json
 import sys
 
 BASE_URL = "https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi"
-API_KEY = "fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261"
+API_KEY = "0a5ae0c87fe64466b37092a7d42acd77e1da29e8c50e607991da5b0b8d5a6718"
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -40,8 +40,8 @@ def check_status(response, expected_status, test_name):
     return passed
 
 def test_get_pricing():
-    """Test: Get Pricing (Lee County - fallback to default pricing)"""
-    api_path = "/pricing/FL/Lee"
+    """Test: Get Pricing (FL/Walton - has specific pricing)"""
+    api_path = "/pricing/FL/Walton"
     log_request("GET", api_path)
     try:
         payload = {

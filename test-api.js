@@ -3,7 +3,7 @@
 const https = require('https');
 
 const BASE_URL = 'https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi';
-const API_KEY = 'fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261';
+const API_KEY = '0a5ae0c87fe64466b37092a7d42acd77e1da29e8c50e607991da5b0b8d5a6718';
 
 // Utility function to make HTTPS requests
 // Base44 functions take the path as a request body parameter, not URL path
@@ -93,18 +93,18 @@ async function runTests() {
   console.log('Enterprise API Test Suite');
   console.log('█'.repeat(70));
 
-  // Test 1: Get Pricing (Lee County - fallback to default pricing)
+  // Test 1: Get Pricing (FL/Walton - has specific pricing)
   try {
-    const pricingResponse = await makeRequest('GET', '/pricing/FL/Lee');
-    // Should return 200 with default pricing via fallback
+    const pricingResponse = await makeRequest('GET', '/pricing/FL/Walton');
+    // Returns Walton County specific pricing
     results.push({
-      name: 'Get Pricing (FL/Lee)',
-      pass: checkStatus(pricingResponse, 200, 'Get Pricing - Should return 200 with default pricing'),
+      name: 'Get Pricing (FL/Walton)',
+      pass: checkStatus(pricingResponse, 200, 'Get Pricing - Should return 200 with Walton County pricing'),
     });
   } catch (error) {
     console.error('✗ FAIL: Get Pricing - Request failed');
     console.error(`Error: ${error.message}`);
-    results.push({ name: 'Get Pricing (FL/Lee)', pass: false });
+    results.push({ name: 'Get Pricing (FL/Walton)', pass: false });
   }
 
   // Test 2: List Orders
