@@ -93,7 +93,7 @@ async function runTests() {
   console.log('Enterprise API Test Suite');
   console.log('█'.repeat(70));
 
-  // Test 1: Get Pricing (FL default pricing)
+  // Test 1: Get Pricing (FL - uses default county pricing)
   try {
     const pricingResponse = await makeRequest('GET', '/pricing/FL/default');
     results.push({
