@@ -95,7 +95,7 @@ async function runTests() {
 
   // Test 1: Get Pricing (FL/Walton - has specific pricing)
   try {
-    const pricingResponse = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer between Individual & Trust' });
+    const pricingResponse = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer to Individual' });
     // Returns Walton County specific pricing
     results.push({
       name: 'Get Pricing (FL/Walton)',
@@ -139,13 +139,13 @@ async function runTests() {
     results.push({ name: 'Get Specific Order', pass: false });
   }
 
-  // Test 4: Create Order (Server determines pricing based on user plan)
+  // Test 4: Create Order with FINCEN-reportable deed type (Server determines pricing based on user plan)
   const createOrderPayload = {
     property_address: '123 Main St, Miami, FL 33101',
     grantor_name: 'John Doe',
     grantee_name: 'Jane Doe',
     contact_name: 'John Doe',
-    deed_type: 'Transfer between Individual & Trust',
+    deed_type: 'Transfer to Trust - FINCEN',
     county: 'Miami-Dade',
     state: 'FL',
     contact_email: 'test@example.com',

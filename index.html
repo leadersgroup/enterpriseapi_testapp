@@ -408,9 +408,10 @@
                         <div class="form-group">
                             <label>Deed Type (required) *</label>
                             <select id="pricing_deed_type">
-                                <option>Transfer between Individual & Trust</option>
-                                <option>Transfer between Individual & Company</option>
-                                <option>Transfer between Individuals (Add/Remove name)</option>
+                                <option value="Transfer to Individual">Transfer to Individual (non-reportable)</option>
+                                <option value="Transfer to Trust - FINCEN">Transfer to Trust - FINCEN (reportable)</option>
+                                <option value="Transfer to Company - FINCEN">Transfer to Company - FINCEN (reportable)</option>
+                                <option value="Transfer to Individual - FINCEN">Transfer to Individual - FINCEN (reportable, no fee)</option>
                             </select>
                         </div>
 
@@ -491,9 +492,10 @@
                         <div class="form-group">
                             <label>Deed Type *</label>
                             <select id="order_deed_type">
-                                <option>Transfer between Individual & Trust</option>
-                                <option>Transfer between Individual & Company</option>
-                                <option>Transfer between Individuals (Add/Remove name)</option>
+                                <option value="Transfer to Individual">Transfer to Individual (non-reportable)</option>
+                                <option value="Transfer to Trust - FINCEN">Transfer to Trust - FINCEN (reportable + $95)</option>
+                                <option value="Transfer to Company - FINCEN">Transfer to Company - FINCEN (reportable + $95)</option>
+                                <option value="Transfer to Individual - FINCEN">Transfer to Individual - FINCEN (reportable, no fee)</option>
                             </select>
                         </div>
 
@@ -939,9 +941,9 @@
             document.getElementById('test_execution').style.display = 'block';
             document.getElementById('test_results_summary').innerHTML = '<p style="color: #ff9800; margin: 0;">⏳ Running tests...</p>';
 
-            // Test 1: Get Pricing (Walton - has specific data)
+            // Test 1: Get Pricing (Walton - non-reportable deed type)
             testResults.total++;
-            const pricing = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer between Individual & Trust' });
+            const pricing = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer to Individual' });
             if (pricing.status === 200) testResults.passed++; else testResults.failed++;
 
             await sleep(500);
@@ -969,14 +971,14 @@
 
             await sleep(500);
 
-            // Test 4: Create Order
+            // Test 4: Create Order with FINCEN-reportable deed type (includes $95 fee)
             testResults.total++;
             const createOrder = await makeRequest('POST', '/orders', {
                 property_address: '789 Oak St, Tampa, FL 33602',
                 grantor_name: 'Jane Smith',
                 grantee_name: 'John Smith',
                 contact_name: 'Jane Smith',
-                deed_type: 'Transfer between Individual & Company',
+                deed_type: 'Transfer to Company - FINCEN',
                 county: 'Hillsborough',
                 state: 'FL',
                 contact_email: 'jane@example.com',
@@ -999,14 +1001,14 @@
 
             await sleep(500);
 
-            // Test 6: Create Order with NY State (includes SSN fields)
+            // Test 6: Create Order with NY State and FINCEN deed type (includes SSN fields + $95 fee)
             testResults.total++;
             const createOrderNY = await makeRequest('POST', '/orders', {
                 property_address: '500 5th Ave, New York, NY 10110',
                 grantor_name: 'Alice Johnson',
                 grantee_name: 'Bob Wilson',
                 contact_name: 'Alice Johnson',
-                deed_type: 'Transfer between Individuals (Add/Remove name)',
+                deed_type: 'Transfer to Trust - FINCEN',
                 county: 'New York',
                 state: 'NY',
                 contact_email: 'alice@example.com',
