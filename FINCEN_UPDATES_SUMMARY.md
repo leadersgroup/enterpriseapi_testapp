@@ -13,19 +13,20 @@ The deed_type field now includes FINCEN compliance indicators:
 
 1. **Transfer to Individual** (non-reportable)
    - No FINCEN fee
-   - Standard deed type
+   - NOT reportable to FINCEN
 
-2. **Transfer to Trust - FINCEN** (reportable)
+2. **Transfer to Individual - FINCEN** (non-reportable)
+   - No FINCEN fee
+   - Named variant but still NOT reportable to FINCEN
+   - All transfers to individuals are not FINCEN reportable
+
+3. **Transfer to Trust - FINCEN** (reportable)
    - Adds $95 FINCEN fee
    - Requires beneficial owner reporting
 
-3. **Transfer to Company - FINCEN** (reportable)
+4. **Transfer to Company - FINCEN** (reportable)
    - Adds $95 FINCEN fee
    - Requires beneficial owner reporting
-
-4. **Transfer to Individual - FINCEN** (reportable)
-   - No FINCEN fee added
-   - Reportable for compliance tracking
 
 ---
 
