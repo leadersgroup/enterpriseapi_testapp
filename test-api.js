@@ -144,6 +144,7 @@ async function runTests() {
     property_address: '123 Main St, Miami, FL 33101',
     grantor_name: 'John Doe',
     grantee_name: 'Jane Doe',
+    contact_name: 'John Doe',
     deed_type: 'Transfer between Individual & Trust',
     county: 'Miami-Dade',
     state: 'FL',

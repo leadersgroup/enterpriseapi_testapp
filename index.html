@@ -484,6 +484,11 @@
                         </div>
 
                         <div class="form-group">
+                            <label>Contact Name *</label>
+                            <input type="text" id="order_contact_name" value="John Doe" placeholder="Name of contact person">
+                        </div>
+
+                        <div class="form-group">
                             <label>Deed Type *</label>
                             <select id="order_deed_type">
                                 <option>Transfer between Individual & Trust</option>
@@ -499,7 +504,19 @@
 
                         <div class="form-group">
                             <label>State *</label>
-                            <input type="text" id="order_state" value="FL" placeholder="State code">
+                            <input type="text" id="order_state" value="FL" placeholder="State code" onchange="toggleSSNFields()">
+                        </div>
+
+                        <div id="ssn_fields" style="display: none;">
+                            <div class="form-group">
+                                <label>Grantor SSN <span id="ssn_requirement" style="color: #999;">(optional)</span></label>
+                                <input type="text" id="order_grantor_ssn" placeholder="XXX-XX-XXXX">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Grantee SSN <span id="ssn_requirement2" style="color: #999;">(optional)</span></label>
+                                <input type="text" id="order_grantee_ssn" placeholder="XXX-XX-XXXX">
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -732,6 +749,28 @@
             }
         }
 
+        // Toggle SSN fields based on state
+        function toggleSSNFields() {
+            const state = document.getElementById('order_state').value.toUpperCase();
+            const ssnFields = document.getElementById('ssn_fields');
+            const req1 = document.getElementById('ssn_requirement');
+            const req2 = document.getElementById('ssn_requirement2');
+
+            if (state === 'NY') {
+                ssnFields.style.display = 'block';
+                req1.textContent = '(required)';
+                req1.style.color = '#d32f2f';
+                req2.textContent = '(required)';
+                req2.style.color = '#d32f2f';
+            } else {
+                ssnFields.style.display = 'block';
+                req1.textContent = '(optional)';
+                req1.style.color = '#999';
+                req2.textContent = '(optional)';
+                req2.style.color = '#999';
+            }
+        }
+
         // Pricing Tests
         function setPricingQuick(state, county) {
             document.getElementById('pricing_state').value = state;
@@ -774,16 +813,29 @@
 
         async function testCreateOrder() {
             const attachments = getAttachmentValues();
+            const state = document.getElementById('order_state').value.toUpperCase();
+            const grantor_ssn = document.getElementById('order_grantor_ssn').value;
+            const grantee_ssn = document.getElementById('order_grantee_ssn').value;
+
             const body = {
                 property_address: document.getElementById('order_property').value,
                 grantor_name: document.getElementById('order_grantor').value,
                 grantee_name: document.getElementById('order_grantee').value,
+                contact_name: document.getElementById('order_contact_name').value,
                 deed_type: document.getElementById('order_deed_type').value,
                 county: document.getElementById('order_county').value,
-                state: document.getElementById('order_state').value,
+                state: state,
                 contact_email: document.getElementById('order_email').value,
                 additional_instructions: document.getElementById('order_instructions').value,
             };
+
+            // Add SSN fields if provided (required for NY, optional for others)
+            if (grantor_ssn) {
+                body.grantor_ssn = grantor_ssn;
+            }
+            if (grantee_ssn) {
+                body.grantee_ssn = grantee_ssn;
+            }
 
             if (attachments.length > 0) {
                 body.attachments = attachments;
@@ -800,11 +852,15 @@
             document.getElementById('order_property').value = '123 Main St, Miami, FL 33101';
             document.getElementById('order_grantor').value = 'John Doe';
             document.getElementById('order_grantee').value = 'Jane Doe';
+            document.getElementById('order_contact_name').value = 'John Doe';
             document.getElementById('order_county').value = 'Miami-Dade';
             document.getElementById('order_state').value = 'FL';
+            document.getElementById('order_grantor_ssn').value = '';
+            document.getElementById('order_grantee_ssn').value = '';
             document.getElementById('order_email').value = 'test@example.com';
             document.getElementById('order_instructions').value = '';
             document.getElementById('attachments_list').innerHTML = '';
+            toggleSSNFields();
         }
 
         // Attachments Management
@@ -919,6 +975,7 @@
                 property_address: '789 Oak St, Tampa, FL 33602',
                 grantor_name: 'Jane Smith',
                 grantee_name: 'John Smith',
+                contact_name: 'Jane Smith',
                 deed_type: 'Transfer between Individual & Company',
                 county: 'Hillsborough',
                 state: 'FL',
@@ -939,6 +996,24 @@
                 url: 'https://example.com/webhook'
             });
             if (webhook.status === 201) testResults.passed++; else testResults.failed++;
+
+            await sleep(500);
+
+            // Test 6: Create Order with NY State (includes SSN fields)
+            testResults.total++;
+            const createOrderNY = await makeRequest('POST', '/orders', {
+                property_address: '500 5th Ave, New York, NY 10110',
+                grantor_name: 'Alice Johnson',
+                grantee_name: 'Bob Wilson',
+                contact_name: 'Alice Johnson',
+                deed_type: 'Transfer between Individuals (Add/Remove name)',
+                county: 'New York',
+                state: 'NY',
+                contact_email: 'alice@example.com',
+                grantor_ssn: '123-45-6789',
+                grantee_ssn: '987-65-4321'
+            });
+            if (createOrderNY.status === 201) testResults.passed++; else testResults.failed++;
 
             // Display summary
             const statusClass = testResults.passed === testResults.total ? 'status-success' : 'status-error';
