@@ -5,6 +5,7 @@
 | Deed Type | FINCEN Fee | Reportable | Use Case |
 |-----------|-----------|-----------|----------|
 | `Transfer to Individual` | $0 | ❌ No | Standard transfers to individuals (not reportable) |
+| `Transfer to Trust` | $0 | ❌ No | Transfers to trusts - non-reportable variant |
 | `Transfer to Trust - FINCEN` | **+$95** | ✅ Yes | Transfers to trusts (requires FINCEN reporting) |
 | `Transfer to Company - FINCEN` | **+$95** | ✅ Yes | Transfers to companies (requires FINCEN reporting) |
 

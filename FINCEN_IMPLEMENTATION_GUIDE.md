@@ -61,6 +61,7 @@ This guide documents the FINCEN residential reporting compliance implementation 
 ### Deed Types
 ```
 Transfer to Individual               → $0 fee, NOT reportable
+Transfer to Trust                    → $0 fee, NOT reportable
 Transfer to Trust - FINCEN           → +$95 fee, reportable
 Transfer to Company - FINCEN         → +$95 fee, reportable
 ```
