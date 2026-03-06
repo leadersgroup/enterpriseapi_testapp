@@ -113,6 +113,7 @@ def test_create_order():
                 "file_url": "https://example.com/documents/deed_draft.pdf",
                 "file_name": "deed_draft.pdf",
                 "file_size": 102400,
+                "uploaded_date": "2026-03-06T14:30:00Z",
             }
         ],
     }

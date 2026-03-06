@@ -880,11 +880,13 @@
 
         function addAttachment() {
             attachmentCount++;
+            const currentDate = new Date().toISOString();
             const html = `
                 <div class="attachment-item" id="attachment_${attachmentCount}">
                     <input type="text" placeholder="File URL (https://...)" class="attachment-url">
                     <input type="text" placeholder="File Name (e.g., deed_draft.pdf)" class="attachment-name">
                     <input type="number" placeholder="File Size (bytes, optional)" class="attachment-size">
+                    <input type="hidden" class="attachment-uploaded-date" value="${currentDate}">
                     <button class="btn-remove" onclick="removeAttachment(${attachmentCount})">Remove</button>
                 </div>
             `;
@@ -902,10 +904,12 @@
                 const url = item.querySelector('.attachment-url').value;
                 const name = item.querySelector('.attachment-name').value;
                 const size = item.querySelector('.attachment-size').value;
+                const uploadedDate = item.querySelector('.attachment-uploaded-date').value;
 
                 if (url && name) {
                     const attachment = { file_url: url, file_name: name };
                     if (size) attachment.file_size = parseInt(size);
+                    if (uploadedDate) attachment.uploaded_date = uploadedDate;
                     attachments.push(attachment);
                 }
             });
@@ -995,7 +999,8 @@
                 attachments: [{
                     file_url: 'https://example.com/deed.pdf',
                     file_name: 'deed.pdf',
-                    file_size: 102400
+                    file_size: 102400,
+                    uploaded_date: new Date().toISOString()
                 }]
             });
             if (createOrder.status === 201) testResults.passed++; else testResults.failed++;
