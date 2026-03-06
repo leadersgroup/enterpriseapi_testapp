@@ -48,7 +48,7 @@ def test_get_pricing():
             "_path": api_path,
             "_method": "GET",
             "_api_key": API_KEY,
-            "deed_type": "Transfer to Individual: FINCEN non-reportable",
+            "deed_type": "Transfer to Individual: FinCEN non-reportable",
         }
         response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
         log_response(response)
@@ -103,7 +103,7 @@ def test_create_order():
         "grantor_name": "John Doe",
         "grantee_name": "Jane Doe",
         "contact_name": "John Doe",
-        "deed_type": "Transfer from entity to Trust: FINCEN reportable",
+        "deed_type": "Transfer from entity to Trust: FinCEN reportable",
         "county": "Miami-Dade",
         "state": "FL",
         "contact_email": "test@example.com",
