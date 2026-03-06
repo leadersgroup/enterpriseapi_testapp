@@ -95,7 +95,7 @@ async function runTests() {
 
   // Test 1: Get Pricing (FL/Walton - has specific pricing)
   try {
-    const pricingResponse = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer to Individual' });
+    const pricingResponse = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer to Individual: FINCEN non-reportable' });
     // Returns Walton County specific pricing
     results.push({
       name: 'Get Pricing (FL/Walton)',
@@ -145,7 +145,7 @@ async function runTests() {
     grantor_name: 'John Doe',
     grantee_name: 'Jane Doe',
     contact_name: 'John Doe',
-    deed_type: 'Transfer to Trust - FINCEN',
+    deed_type: 'Transfer from entity to Trust: FINCEN reportable',
     county: 'Miami-Dade',
     state: 'FL',
     contact_email: 'test@example.com',

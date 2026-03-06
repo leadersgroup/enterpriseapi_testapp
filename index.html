@@ -408,10 +408,15 @@
                         <div class="form-group">
                             <label>Deed Type (required) *</label>
                             <select id="pricing_deed_type">
-                                <option value="Transfer to Individual">Transfer to Individual (non-reportable)</option>
-                                <option value="Transfer to Trust">Transfer to Trust (non-reportable)</option>
-                                <option value="Transfer to Trust - FINCEN">Transfer to Trust - FINCEN (reportable + $95)</option>
-                                <option value="Transfer to Company - FINCEN">Transfer to Company - FINCEN (reportable + $95)</option>
+                                <option value="Transfer of non-residential property: FINCEN non-reportable">Transfer of non-residential property (non-reportable)</option>
+                                <option value="Transfer to Individual: FINCEN non-reportable">Transfer to Individual (non-reportable)</option>
+                                <option value="Transfer from individual to own Revocable Trust as grantor: FINCEN non-reportable">Transfer from individual to own Revocable Trust (non-reportable)</option>
+                                <option value="Transfer due to death of individual: FINCEN non-reportable">Transfer due to death of individual (non-reportable)</option>
+                                <option value="Transfer due to divorce: FINCEN non-reportable">Transfer due to divorce (non-reportable)</option>
+                                <option value="Transfer due to court order: FINCEN non-reportable">Transfer due to court order (non-reportable)</option>
+                                <option value="Transfer to qualified intermediary for 1031 purpose: FINCEN non-reportable">Transfer to qualified intermediary for 1031 purpose (non-reportable)</option>
+                                <option value="Transfer from entity to Trust: FINCEN reportable">Transfer from entity to Trust (reportable + $95)</option>
+                                <option value="Transfer to Company: FINCEN reportable">Transfer to Company (reportable + $95)</option>
                             </select>
                         </div>
 
@@ -492,10 +497,15 @@
                         <div class="form-group">
                             <label>Deed Type *</label>
                             <select id="order_deed_type">
-                                <option value="Transfer to Individual">Transfer to Individual (non-reportable)</option>
-                                <option value="Transfer to Trust">Transfer to Trust (non-reportable)</option>
-                                <option value="Transfer to Trust - FINCEN">Transfer to Trust - FINCEN (reportable + $95)</option>
-                                <option value="Transfer to Company - FINCEN">Transfer to Company - FINCEN (reportable + $95)</option>
+                                <option value="Transfer of non-residential property: FINCEN non-reportable">Transfer of non-residential property (non-reportable)</option>
+                                <option value="Transfer to Individual: FINCEN non-reportable">Transfer to Individual (non-reportable)</option>
+                                <option value="Transfer from individual to own Revocable Trust as grantor: FINCEN non-reportable">Transfer from individual to own Revocable Trust (non-reportable)</option>
+                                <option value="Transfer due to death of individual: FINCEN non-reportable">Transfer due to death of individual (non-reportable)</option>
+                                <option value="Transfer due to divorce: FINCEN non-reportable">Transfer due to divorce (non-reportable)</option>
+                                <option value="Transfer due to court order: FINCEN non-reportable">Transfer due to court order (non-reportable)</option>
+                                <option value="Transfer to qualified intermediary for 1031 purpose: FINCEN non-reportable">Transfer to qualified intermediary for 1031 purpose (non-reportable)</option>
+                                <option value="Transfer from entity to Trust: FINCEN reportable">Transfer from entity to Trust (reportable + $95)</option>
+                                <option value="Transfer to Company: FINCEN reportable">Transfer to Company (reportable + $95)</option>
                             </select>
                         </div>
 
@@ -943,7 +953,7 @@
 
             // Test 1: Get Pricing (Walton - non-reportable deed type)
             testResults.total++;
-            const pricing = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer to Individual' });
+            const pricing = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer to Individual: FINCEN non-reportable' });
             if (pricing.status === 200) testResults.passed++; else testResults.failed++;
 
             await sleep(500);
@@ -978,7 +988,7 @@
                 grantor_name: 'Jane Smith',
                 grantee_name: 'John Smith',
                 contact_name: 'Jane Smith',
-                deed_type: 'Transfer to Company - FINCEN',
+                deed_type: 'Transfer to Company: FINCEN reportable',
                 county: 'Hillsborough',
                 state: 'FL',
                 contact_email: 'jane@example.com',
@@ -1008,7 +1018,7 @@
                 grantor_name: 'Alice Johnson',
                 grantee_name: 'Bob Wilson',
                 contact_name: 'Alice Johnson',
-                deed_type: 'Transfer to Trust - FINCEN',
+                deed_type: 'Transfer from entity to Trust: FINCEN reportable',
                 county: 'New York',
                 state: 'NY',
                 contact_email: 'alice@example.com',
