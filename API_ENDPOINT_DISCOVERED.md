@@ -8,7 +8,7 @@ The API is responding and showing us the available endpoints!
 
 **Endpoint URL:**
 ```
-POST https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi
+POST https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi
 ```
 
 **Authentication:**

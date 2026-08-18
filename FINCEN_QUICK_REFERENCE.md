@@ -75,7 +75,7 @@ When you request pricing, the response now includes FinCEN data:
 
 ### Get Pricing (Non-Reportable)
 ```bash
-curl -X POST https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi \
+curl -X POST https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi \
   -H "Content-Type: application/json" \
   -d '{
     "_path": "/pricing/FL/Walton",
@@ -87,7 +87,7 @@ curl -X POST https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/en
 
 ### Get Pricing (Reportable)
 ```bash
-curl -X POST https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi \
+curl -X POST https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi \
   -H "Content-Type: application/json" \
   -d '{
     "_path": "/pricing/FL/Walton",
@@ -99,7 +99,7 @@ curl -X POST https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/en
 
 ### Create Order (Reportable)
 ```bash
-curl -X POST https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi \
+curl -X POST https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi \
   -H "Content-Type: application/json" \
   -d '{
     "_path": "/orders",

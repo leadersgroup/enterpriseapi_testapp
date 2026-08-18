@@ -22,7 +22,7 @@
 
 **API Endpoint:**
 ```
-https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi
+https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi
 ```
 
 **Authentication:**

@@ -54,7 +54,7 @@ Total: 4/5 passed
 ## 🔧 API Endpoint
 
 ```
-POST https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi
+POST https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi
 ```
 
 All requests are HTTP POST, with the intended HTTP method specified in the request body via the `_method` parameter.

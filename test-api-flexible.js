@@ -13,7 +13,7 @@ const https = require('https');
 // CONFIGURATION - Update these with your actual endpoints
 // ============================================================================
 
-const BASE_URL = 'https://50-deedscom-enterprise-db0653f4.base44.app/api/functions';
+const BASE_URL = 'https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions';
 const API_KEY = 'fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261';
 
 // Define your endpoints here

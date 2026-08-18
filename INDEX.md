@@ -240,7 +240,7 @@ node test-api.js
 
 ## 🔗 Related Resources
 
-- **Base URL:** `https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi`
+- **Base URL:** `https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi`
 - **API Key:** `fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261`
 - **Framework:** Base44 Serverless Platform
 - **Authentication:** API Key in request body

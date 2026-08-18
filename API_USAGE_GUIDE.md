@@ -4,7 +4,7 @@
 
 ### Base URL
 ```
-https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi
+https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi
 ```
 
 ### Authentication
@@ -295,7 +295,7 @@ For endpoints that support query parameters, include them in the `_path`:
 
 ### Using curl
 ```bash
-curl -X POST https://50-deedscom-enterprise-db0653f4.base44.app/api/functions/enterpriseApi \
+curl -X POST https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi \
   -H "Content-Type: application/json" \
   -d '{
     "_path": "/orders",
