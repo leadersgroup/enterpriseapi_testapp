@@ -14,7 +14,7 @@ const https = require('https');
 // ============================================================================
 
 const BASE_URL = 'https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions';
-const API_KEY = 'fc779b2e4c79cecec9f995d5098eac8ae8ba4e6ccd289ea9cf9ce3b8fbd95261';
+const API_KEY = 'c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a';
 
 // Define your endpoints here
 const TEST_ENDPOINTS = [

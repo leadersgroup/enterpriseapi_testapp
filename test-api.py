@@ -5,7 +5,7 @@ import json
 import sys
 
 BASE_URL = "https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi"
-API_KEY = "0a5ae0c87fe64466b37092a7d42acd77e1da29e8c50e607991da5b0b8d5a6718"
+API_KEY = "c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a"
 
 HEADERS = {
     "Content-Type": "application/json",

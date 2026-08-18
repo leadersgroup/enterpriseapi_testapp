@@ -3,7 +3,7 @@
 const https = require('https');
 
 const BASE_URL = 'https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi';
-const API_KEY = '0a5ae0c87fe64466b37092a7d42acd77e1da29e8c50e607991da5b0b8d5a6718';
+const API_KEY = 'c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a';
 
 // Utility function to make HTTPS requests
 // Base44 functions take the path as a request body parameter, not URL path
