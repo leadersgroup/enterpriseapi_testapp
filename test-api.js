@@ -95,7 +95,7 @@ function check(name, res, expected, extra = true) {
 
 function baseOrder(overrides = {}) {
   return {
-    deed_type: 'Individual to trust',
+    deed_type: 'Individual to Trust',
     property_address: '123 Main St, Miami, FL 33101',
     grantor_name: 'John Doe, individually',
     grantee_name: 'John Doe, Trustee of the Doe Family Trust dated 01/15/2026',
@@ -123,16 +123,16 @@ async function run() {
   let orderId = null;
   let webhookId = null;
 
-  await step('Pricing: FL/Miami-Dade, legacy reportable', async () => {
+  await step('Pricing: FL/Miami-Dade, FinCEN reportable', async () => {
     const r = await api('GET', '/pricing/FL/Miami-Dade', {
-      deed_type: 'Transfer from entity to Trust: FinCEN reportable (Legacy)',
+      deed_type: 'Transfer from entity to Trust: FinCEN reportable',
     });
-    check('Pricing: FL/Miami-Dade, legacy reportable', r, [200], r.data?.fincen_required === true);
+    check('Pricing: FL/Miami-Dade, FinCEN reportable', r, [200], r.data?.fincen_required === true);
   });
 
-  await step('Pricing: FL/Walton, Individual to individual', async () => {
-    const r = await api('GET', '/pricing/FL/Walton', { deed_type: 'Individual to individual' });
-    check('Pricing: FL/Walton, Individual to individual', r, [200], typeof r.data?.total === 'number');
+  await step('Pricing: FL/Walton, Individual to Individual', async () => {
+    const r = await api('GET', '/pricing/FL/Walton', { deed_type: 'Individual to Individual' });
+    check('Pricing: FL/Walton, Individual to Individual', r, [200], typeof r.data?.total === 'number');
   });
 
   await step('List orders', async () => {
@@ -179,22 +179,24 @@ async function run() {
 
   await step('NY order with SSNs', async () => {
     const r = await api('POST', '/orders', baseOrder({
-      deed_type: 'Individual to company',
+      deed_type: 'Individual to Company',
       property_address: '500 5th Ave, New York, NY 10110', county: 'New York', state: 'NY',
       grantor_ssn: '123-45-6789', grantee_ssn: '987-65-4321',
     }));
     check('NY order with SSNs', r, [201]);
   });
 
-  // deed_type is matched case-sensitively against the Order entity enum, which capitalizes
-  // "Trust to Individual", "Company to Trust" and "Company to Company".
-  await step('Capitalized deed_type "Company to Trust" accepted', async () => {
-    const r = await api('POST', '/orders', baseOrder({ deed_type: 'Company to Trust' }));
-    check('Capitalized deed_type "Company to Trust" accepted', r, [201]);
+  // Old spellings (lowercase third word, " (Legacy)" suffix) are still accepted and
+  // stored in the canonical form.
+  await step('Old spelling stored as "Individual to Individual"', async () => {
+    const created = await api('POST', '/orders', baseOrder({ deed_type: 'Individual to individual' }));
+    const id = created.data?.order?.id;
+    const r = id ? await api('GET', `/orders/${id}`) : created;
+    check('Old spelling stored as "Individual to Individual"', r, [200], r.data?.deed_type === 'Individual to Individual');
   });
 
   await step('Malformed order -> 400', async () => {
-    const r = await api('POST', '/orders', { deed_type: 'Individual to individual' });
+    const r = await api('POST', '/orders', { deed_type: 'Individual to Individual' });
     check('Malformed order -> 400', r, [400], !!r.data?.error);
   });
 

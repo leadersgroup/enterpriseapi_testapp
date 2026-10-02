@@ -754,21 +754,21 @@
     <script>
         const DEED_TYPES = {
             'v4.0 deed types': [
-                'Individual to individual', 'Individual to trust', 'Individual to company',
-                'Trust to Individual', 'Trust to trust', 'Trust to company',
-                'Company to individual', 'Company to Trust', 'Company to Company',
+                'Individual to Individual', 'Individual to Trust', 'Individual to Company',
+                'Trust to Individual', 'Trust to Trust', 'Trust to Company',
+                'Company to Individual', 'Company to Trust', 'Company to Company',
             ],
-            'Legacy (FinCEN-classified)': [
-                'Transfer of non-residential property: FinCEN non-reportable (Legacy)',
-                'Transfer to Individual: FinCEN non-reportable (Legacy)',
-                'Transfer from individual to own Revocable Trust as grantor: FinCEN non-reportable (Legacy)',
-                'Transfer due to death of individual: FinCEN non-reportable (Legacy)',
-                'Transfer due to divorce: FinCEN non-reportable (Legacy)',
-                'Transfer due to court order: FinCEN non-reportable (Legacy)',
-                'Transfer to qualified intermediary for 1031 purpose: FinCEN non-reportable (Legacy)',
-                'Transfer to regulated entity: FinCEN non-reportable (Legacy)',
-                'Transfer from entity to Trust: FinCEN reportable (Legacy)',
-                'Transfer to Company: FinCEN reportable (Legacy)',
+            'FinCEN-classified': [
+                'Transfer of non-residential property: FinCEN non-reportable',
+                'Transfer to Individual: FinCEN non-reportable',
+                'Transfer from individual to own Revocable Trust as grantor: FinCEN non-reportable',
+                'Transfer due to death of individual: FinCEN non-reportable',
+                'Transfer due to divorce: FinCEN non-reportable',
+                'Transfer due to court order: FinCEN non-reportable',
+                'Transfer to qualified intermediary for 1031 purpose: FinCEN non-reportable',
+                'Transfer to regulated entity: FinCEN non-reportable',
+                'Transfer from entity to Trust: FinCEN reportable',
+                'Transfer to Company: FinCEN reportable',
             ],
         };
         const ORDER_STATUSES = ['Submitted', 'In Review', 'Drafting', 'Awaiting Signature', 'Recording', 'Completed', 'Cancelled'];
@@ -823,22 +823,14 @@
             btn.classList.add('active');
         }
 
-        // Display-only: "Company to trust" -> "Company to Trust". The option value keeps the
-        // exact enum string, because the server matches deed_type case-sensitively.
-        function deedTypeLabel(d) {
-            const words = d.split(' ');
-            if (words.length !== 3) return d;
-            return [words[0], words[1], words[2][0].toUpperCase() + words[2].slice(1)].join(' ');
-        }
-
         function populateSelects() {
             document.querySelectorAll('.deed-type-select').forEach(sel => {
                 sel.innerHTML = Object.entries(DEED_TYPES).map(([group, items]) =>
-                    `<optgroup label="${group}">${items.map(d => `<option value="${d}">${deedTypeLabel(d)}</option>`).join('')}</optgroup>`
+                    `<optgroup label="${group}">${items.map(d => `<option value="${d}">${d}</option>`).join('')}</optgroup>`
                 ).join('');
             });
-            document.getElementById('pricing_deed_type').value = 'Transfer from entity to Trust: FinCEN reportable (Legacy)';
-            document.getElementById('order_deed_type').value = 'Individual to trust';
+            document.getElementById('pricing_deed_type').value = 'Transfer from entity to Trust: FinCEN reportable';
+            document.getElementById('order_deed_type').value = 'Individual to Trust';
             document.querySelectorAll('.status-select').forEach(sel => {
                 sel.innerHTML = '<option value="">(any)</option>' + ORDER_STATUSES.map(s => `<option>${s}</option>`).join('');
             });
@@ -1031,7 +1023,7 @@
         }
 
         function clearOrderForm() {
-            document.getElementById('order_deed_type').value = 'Individual to trust';
+            document.getElementById('order_deed_type').value = 'Individual to Trust';
             document.getElementById('order_property').value = '123 Main St, Miami, FL 33101';
             document.getElementById('order_grantor').value = 'John Doe, individually';
             document.getElementById('order_grantee').value = 'John Doe, Trustee of the Doe Family Trust dated 01/15/2026';
@@ -1154,7 +1146,7 @@
             };
             const ref = 'TEST-' + Date.now();
             const order = {
-                deed_type: 'Individual to trust',
+                deed_type: 'Individual to Trust',
                 property_address: '123 Main St, Miami, FL 33101',
                 grantor_name: 'John Doe, individually',
                 grantee_name: 'John Doe, Trustee of the Doe Family Trust dated 01/15/2026',
@@ -1164,11 +1156,11 @@
             const ny = { property_address: '500 5th Ave, New York, NY 10110', county: 'New York', state: 'NY' };
             let r;
 
-            r = await makeRequest('GET', '/pricing/FL/Miami-Dade', { deed_type: 'Transfer from entity to Trust: FinCEN reportable (Legacy)' });
-            record('Pricing FL/Miami-Dade (legacy reportable)', r.status === 200 && r.data.fincen_required === true, r.status);
+            r = await makeRequest('GET', '/pricing/FL/Miami-Dade', { deed_type: 'Transfer from entity to Trust: FinCEN reportable' });
+            record('Pricing FL/Miami-Dade (FinCEN reportable)', r.status === 200 && r.data.fincen_required === true, r.status);
 
-            r = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Individual to individual' });
-            record('Pricing FL/Walton (Individual to individual)', r.status === 200, r.status);
+            r = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Individual to Individual' });
+            record('Pricing FL/Walton (Individual to Individual)', r.status === 200, r.status);
 
             r = await makeRequest('GET', '/orders', { state: 'FL' });
             record('List orders', r.status === 200 && Array.isArray(r.data.orders), r.status);
@@ -1193,15 +1185,17 @@
             record('NY without SSNs → 400', r.status === 400 && /ssn/i.test(JSON.stringify(r.data)), r.status);
 
             r = await makeRequest('POST', '/orders', {
-                ...order, ...ny, deed_type: 'Individual to company', client_reference: ref + '-ny2',
+                ...order, ...ny, deed_type: 'Individual to Company', client_reference: ref + '-ny2',
                 grantor_ssn: '123-45-6789', grantee_ssn: '987-65-4321',
             });
             record('NY with SSNs', r.status === 201, r.status);
 
-            r = await makeRequest('POST', '/orders', { ...order, deed_type: 'Company to Trust', client_reference: ref + '-case' });
-            record('Capitalized deed type "Company to Trust"', r.status === 201, r.status);
+            // Old spellings are still accepted and stored in the canonical form.
+            r = await makeRequest('POST', '/orders', { ...order, deed_type: 'Individual to individual', client_reference: ref + '-case' });
+            if (r.status === 201 && r.data.order) r = await makeRequest('GET', `/orders/${r.data.order.id}`);
+            record('Old spelling stored as "Individual to Individual"', r.status === 200 && r.data.deed_type === 'Individual to Individual', r.status);
 
-            r = await makeRequest('POST', '/orders', { deed_type: 'Individual to individual' });
+            r = await makeRequest('POST', '/orders', { deed_type: 'Individual to Individual' });
             record('Malformed order → 400', r.status === 400 && !!r.data.error, r.status);
 
             r = await makeRequest('POST', '/webhooks/register', { url: 'https://example.com/webhooks/50deeds', description: 'UI test' });
