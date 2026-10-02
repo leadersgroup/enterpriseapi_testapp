@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise API Tester</title>
+    <title>50Deeds API Tester</title>
     <style>
         * {
             margin: 0;
@@ -364,13 +364,39 @@
             color: white;
             border-color: #667eea;
         }
+
+        .method-delete { background: #f44336; }
+        .method-put { background: #ff9800; }
+
+        .req-block { margin-bottom: 16px; }
+        .req-block-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .req-block-head h4 { color: #333; font-size: 0.95em; }
+        .req-block-head small { color: #888; font-weight: normal; }
+        .btn-copy {
+            padding: 4px 10px;
+            font-size: 0.8em;
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-copy:hover { background: #e0e0e0; }
+        pre { white-space: pre-wrap; word-break: break-all; }
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .result-list { list-style: none; font-size: 0.9em; margin-top: 8px; }
+        .result-list li { padding: 3px 0; }
+        .result-list .pass { color: #2e7d32; }
+        .result-list .fail { color: #c62828; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🏢 Enterprise API Tester</h1>
-            <p>Test all API endpoints for deed recording service</p>
+            <h1>🏢 50Deeds Enterprise API Tester</h1>
+            <p>Enterprise REST API v4.0 — pricing, orders, uploads and webhooks</p>
         </header>
 
         <div class="main-content">
@@ -379,49 +405,39 @@
                 <h2>📋 API Endpoints</h2>
 
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab('pricing')">Pricing</button>
-                    <button class="tab" onclick="switchTab('orders')">Orders</button>
-                    <button class="tab" onclick="switchTab('webhooks')">Webhooks</button>
+                    <button class="tab active" onclick="switchTab('pricing', this)">Pricing</button>
+                    <button class="tab" onclick="switchTab('orders', this)">Orders</button>
+                    <button class="tab" onclick="switchTab('uploads', this)">Uploads</button>
+                    <button class="tab" onclick="switchTab('webhooks', this)">Webhooks</button>
                 </div>
 
                 <!-- Pricing Tab -->
                 <div id="pricing" class="tab-content active">
                     <div class="endpoint-group">
-                        <h3>
-                            <span class="method-badge method-get">GET</span>
-                            Get Pricing Information
-                        </h3>
+                        <h3><span class="method-badge method-get">GET</span> /pricing/{state}/{county}</h3>
                         <div class="info-box">
-                            Retrieve pricing for a specific state and county. If county pricing is not found, returns default state pricing.
+                            Itemized quote: service fee, recording fee, trust recording fee, FinCEN fee and premium discount.
+                            Falls back to state default pricing when the county has none (<code>is_default: true</code>).
+                        </div>
+
+                        <div class="row-2">
+                            <div class="form-group">
+                                <label>State *</label>
+                                <input type="text" id="pricing_state" value="FL" placeholder="FL">
+                            </div>
+                            <div class="form-group">
+                                <label>County *</label>
+                                <input type="text" id="pricing_county" value="Miami-Dade" placeholder="Miami-Dade">
+                            </div>
                         </div>
 
                         <div class="form-group">
-                            <label>State (e.g., FL)</label>
-                            <input type="text" id="pricing_state" value="FL" placeholder="State code">
-                        </div>
-
-                        <div class="form-group">
-                            <label>County (e.g., Lee, Miami-Dade)</label>
-                            <input type="text" id="pricing_county" value="Lee" placeholder="County name">
-                        </div>
-
-                        <div class="form-group">
-                            <label>Deed Type (required) *</label>
-                            <select id="pricing_deed_type">
-                                <option value="Transfer of non-residential property: FinCEN non-reportable">Transfer of non-residential property (non-reportable)</option>
-                                <option value="Transfer to Individual: FinCEN non-reportable">Transfer to Individual (non-reportable)</option>
-                                <option value="Transfer from individual to own Revocable Trust as grantor: FinCEN non-reportable">Transfer from individual to own Revocable Trust (non-reportable)</option>
-                                <option value="Transfer due to death of individual: FinCEN non-reportable">Transfer due to death of individual (non-reportable)</option>
-                                <option value="Transfer due to divorce: FinCEN non-reportable">Transfer due to divorce (non-reportable)</option>
-                                <option value="Transfer due to court order: FinCEN non-reportable">Transfer due to court order (non-reportable)</option>
-                                <option value="Transfer to qualified intermediary for 1031 purpose: FinCEN non-reportable">Transfer to qualified intermediary for 1031 purpose (non-reportable)</option>
-                                <option value="Transfer from entity to Trust: FinCEN reportable">Transfer from entity to Trust (reportable + $95)</option>
-                                <option value="Transfer to Company: FinCEN reportable">Transfer to Company (reportable + $95)</option>
-                            </select>
+                            <label>Deed Type *</label>
+                            <select id="pricing_deed_type" class="deed-type-select"></select>
                         </div>
 
                         <div class="button-group">
-                            <button class="btn-primary" onclick="testGetPricing()">Send Request</button>
+                            <button class="btn-primary" onclick="testGetPricing()">Get Price</button>
                         </div>
                     </div>
                 </div>
@@ -429,111 +445,148 @@
                 <!-- Orders Tab -->
                 <div id="orders" class="tab-content">
                     <div class="endpoint-group">
-                        <h3>
-                            <span class="method-badge method-get">GET</span>
-                            List All Orders
-                        </h3>
-                        <div class="info-box">
-                            Retrieve a list of all orders in the system.
+                        <h3><span class="method-badge method-get">GET</span> /orders</h3>
+                        <div class="info-box">Up to 200 most recent orders, no pagination. Use the client_reference filter to check whether a retried order already exists.</div>
+                        <div class="row-2">
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="list_status" class="status-select"></select>
+                            </div>
+                            <div class="form-group">
+                                <label>State</label>
+                                <input type="text" id="list_state" placeholder="FL">
+                            </div>
+                            <div class="form-group">
+                                <label>Date from</label>
+                                <input type="text" id="list_date_from" placeholder="2026-01-01">
+                            </div>
+                            <div class="form-group">
+                                <label>Date to</label>
+                                <input type="text" id="list_date_to" placeholder="2026-12-31">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>client_reference</label>
+                            <input type="text" id="list_client_reference" placeholder="TX-987654">
                         </div>
                         <div class="button-group">
-                            <button class="btn-primary" onclick="testListOrders()">Get Orders</button>
+                            <button class="btn-primary" onclick="testListOrders()">List Orders</button>
                         </div>
                     </div>
 
                     <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;">
 
                     <div class="endpoint-group">
-                        <h3>
-                            <span class="method-badge method-get">GET</span>
-                            Get Specific Order
-                        </h3>
-                        <div class="info-box">
-                            Retrieve details for a specific order by ID.
+                        <h3><span class="method-badge method-get">GET</span> /orders/history</h3>
+                        <div class="info-box">Paginated, sortable history with status counts. Use this for reconciliation.</div>
+                        <div class="row-2">
+                            <div class="form-group">
+                                <label>Statuses (comma-separated)</label>
+                                <input type="text" id="hist_status" placeholder="Completed,Cancelled">
+                            </div>
+                            <div class="form-group">
+                                <label>Deed type (partial match)</label>
+                                <input type="text" id="hist_deed_type" placeholder="trust">
+                            </div>
+                            <div class="form-group">
+                                <label>Sort by</label>
+                                <select id="hist_sort_by">
+                                    <option>created_date</option><option>updated_date</option><option>status</option>
+                                    <option>state</option><option>total_price</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Sort direction</label>
+                                <select id="hist_sort_dir"><option>desc</option><option>asc</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Limit (max 500)</label>
+                                <input type="number" id="hist_limit" value="25">
+                            </div>
+                            <div class="form-group">
+                                <label>Offset</label>
+                                <input type="number" id="hist_offset" value="0">
+                            </div>
                         </div>
+                        <div class="button-group">
+                            <button class="btn-primary" onclick="testOrderHistory()">Get History</button>
+                        </div>
+                    </div>
 
+                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;">
+
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-get">GET</span> /orders/{order_id}</h3>
                         <div class="form-group">
                             <label>Order ID</label>
-                            <input type="text" id="order_id" placeholder="e.g., 69a778e8c2c91101a75f6a5d">
+                            <input type="text" id="order_id" placeholder="e.g., 6abfb79e187c4921f7586a63">
                         </div>
-
                         <div class="button-group">
                             <button class="btn-primary" onclick="testGetOrder()">Get Order</button>
-                            <button class="btn-secondary" onclick="populateLatestOrderId()">Use Latest</button>
+                            <button class="btn-secondary" onclick="populateLatestOrderId('order_id')">Use Latest</button>
                         </div>
                     </div>
 
                     <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;">
 
                     <div class="endpoint-group">
-                        <h3>
-                            <span class="method-badge method-post">POST</span>
-                            Create New Order
-                        </h3>
+                        <h3><span class="method-badge method-post">POST</span> /orders</h3>
                         <div class="info-box">
-                            Create a new deed recording order. Server automatically determines pricing based on user plan.
-                        </div>
-
-                        <div class="form-group">
-                            <label>Property Address *</label>
-                            <input type="text" id="order_property" value="123 Main St, Miami, FL 33101" placeholder="Full property address">
-                        </div>
-
-                        <div class="form-group">
-                            <label>Grantor Name *</label>
-                            <input type="text" id="order_grantor" value="John Doe" placeholder="Name of grantor">
-                        </div>
-
-                        <div class="form-group">
-                            <label>Grantee Name *</label>
-                            <input type="text" id="order_grantee" value="Jane Doe" placeholder="Name of grantee">
-                        </div>
-
-                        <div class="form-group">
-                            <label>Contact Name *</label>
-                            <input type="text" id="order_contact_name" value="John Doe" placeholder="Name of contact person">
+                            Pricing is calculated server-side and the total is debited by ACH. SSNs are required only when state is NY.
                         </div>
 
                         <div class="form-group">
                             <label>Deed Type *</label>
-                            <select id="order_deed_type">
-                                <option value="Transfer of non-residential property: FinCEN non-reportable">Transfer of non-residential property (non-reportable)</option>
-                                <option value="Transfer to Individual: FinCEN non-reportable">Transfer to Individual (non-reportable)</option>
-                                <option value="Transfer from individual to own Revocable Trust as grantor: FinCEN non-reportable">Transfer from individual to own Revocable Trust (non-reportable)</option>
-                                <option value="Transfer due to death of individual: FinCEN non-reportable">Transfer due to death of individual (non-reportable)</option>
-                                <option value="Transfer due to divorce: FinCEN non-reportable">Transfer due to divorce (non-reportable)</option>
-                                <option value="Transfer due to court order: FinCEN non-reportable">Transfer due to court order (non-reportable)</option>
-                                <option value="Transfer to qualified intermediary for 1031 purpose: FinCEN non-reportable">Transfer to qualified intermediary for 1031 purpose (non-reportable)</option>
-                                <option value="Transfer from entity to Trust: FinCEN reportable">Transfer from entity to Trust (reportable + $95)</option>
-                                <option value="Transfer to Company: FinCEN reportable">Transfer to Company (reportable + $95)</option>
-                            </select>
+                            <select id="order_deed_type" class="deed-type-select"></select>
                         </div>
-
                         <div class="form-group">
-                            <label>County *</label>
-                            <input type="text" id="order_county" value="Miami-Dade" placeholder="County name">
+                            <label>Property Address *</label>
+                            <input type="text" id="order_property" value="123 Main St, Miami, FL 33101">
                         </div>
-
                         <div class="form-group">
-                            <label>State *</label>
-                            <input type="text" id="order_state" value="FL" placeholder="State code" onchange="toggleSSNFields()">
+                            <label>Grantor Name * <small style="color:#888">(include capacity, as on the prior deed)</small></label>
+                            <input type="text" id="order_grantor" value="John Doe, individually">
                         </div>
-
-                        <div id="ssn_fields" style="display: none;">
+                        <div class="form-group">
+                            <label>Grantee Name * <small style="color:#888">(trusts: exact trust name and date)</small></label>
+                            <input type="text" id="order_grantee" value="John Doe, Trustee of the Doe Family Trust dated 01/15/2026">
+                        </div>
+                        <div class="row-2">
                             <div class="form-group">
-                                <label>Grantor SSN <span id="ssn_requirement" style="color: #999;">(optional)</span></label>
+                                <label>Contact Name *</label>
+                                <input type="text" id="order_contact_name" value="John Doe">
+                            </div>
+                            <div class="form-group">
+                                <label>Contact Email *</label>
+                                <input type="email" id="order_email" value="test@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>County</label>
+                                <input type="text" id="order_county" value="Miami-Dade">
+                            </div>
+                            <div class="form-group">
+                                <label>State</label>
+                                <input type="text" id="order_state" value="FL" oninput="toggleSSNFields()">
+                            </div>
+                        </div>
+
+                        <div id="ssn_fields" class="row-2" style="display: none;">
+                            <div class="form-group">
+                                <label>Grantor SSN <span style="color: #d32f2f;">(required for NY)</span></label>
                                 <input type="text" id="order_grantor_ssn" placeholder="XXX-XX-XXXX">
                             </div>
-
                             <div class="form-group">
-                                <label>Grantee SSN <span id="ssn_requirement2" style="color: #999;">(optional)</span></label>
+                                <label>Grantee SSN <span style="color: #d32f2f;">(required for NY)</span></label>
                                 <input type="text" id="order_grantee_ssn" placeholder="XXX-XX-XXXX">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label>Contact Email *</label>
-                            <input type="email" id="order_email" value="test@example.com" placeholder="Contact email">
+                            <label>client_reference <small style="color:#888">(idempotency key: reuse it on retries)</small></label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="order_client_reference">
+                                <button class="btn-secondary" onclick="newClientReference()">New</button>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -542,14 +595,39 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Attachments</label>
+                            <label>Attachments <small style="color:#888">(server stamps uploaded_date)</small></label>
                             <div id="attachments_list"></div>
                             <button class="btn-add" onclick="addAttachment()">+ Add Attachment</button>
                         </div>
 
                         <div class="button-group">
                             <button class="btn-primary" onclick="testCreateOrder()">Create Order</button>
-                            <button class="btn-secondary" onclick="clearOrderForm()">Clear</button>
+                            <button class="btn-secondary" onclick="clearOrderForm()">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Uploads Tab -->
+                <div id="uploads" class="tab-content">
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-post">POST</span> /uploadDocument</h3>
+                        <div class="info-box">
+                            Separate function at <code>/functions/uploadDocument</code>, sent as multipart/form-data.
+                            PDF, PNG, JPG, TIFF, DOC or DOCX, up to 25 MB. With an order ID the file is appended to that order's attachments.
+                        </div>
+                        <div class="form-group">
+                            <label>File *</label>
+                            <input type="file" id="upload_file" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.doc,.docx">
+                        </div>
+                        <div class="form-group">
+                            <label>order_id or custom_order_id (optional)</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="upload_order_id" placeholder="abc123 or ENT20260304-143025">
+                                <button class="btn-secondary" onclick="populateLatestOrderId('upload_order_id')">Latest</button>
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn-primary" onclick="testUploadDocument()">Upload</button>
                         </div>
                     </div>
                 </div>
@@ -557,26 +635,33 @@
                 <!-- Webhooks Tab -->
                 <div id="webhooks" class="tab-content">
                     <div class="endpoint-group">
-                        <h3>
-                            <span class="method-badge method-post">POST</span>
-                            Register Webhook
-                        </h3>
+                        <h3><span class="method-badge method-post">POST</span> /webhooks/register</h3>
                         <div class="info-box">
-                            Register a webhook URL to receive notifications for order events.
+                            Receives <code>order_status_update</code> events. The endpoint must return 2xx within 5 s and must handle duplicate deliveries.
                         </div>
-
                         <div class="form-group">
-                            <label>Webhook URL *</label>
-                            <input type="text" id="webhook_url" value="https://your-endpoint.com/webhook" placeholder="https://your-domain.com/webhook">
+                            <label>Webhook URL * (HTTPS)</label>
+                            <input type="text" id="webhook_url" value="https://example.com/webhooks/50deeds">
                         </div>
-
                         <div class="form-group">
-                            <label>Description (optional)</label>
-                            <input type="text" id="webhook_description" placeholder="Webhook description">
+                            <label>Description</label>
+                            <input type="text" id="webhook_description" placeholder="Production order updates">
                         </div>
-
                         <div class="button-group">
                             <button class="btn-primary" onclick="testRegisterWebhook()">Register Webhook</button>
+                        </div>
+                    </div>
+
+                    <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;">
+
+                    <div class="endpoint-group">
+                        <h3><span class="method-badge method-delete">DELETE</span> /webhooks/{webhook_id}</h3>
+                        <div class="form-group">
+                            <label>Webhook ID</label>
+                            <input type="text" id="webhook_id" placeholder="returned by register">
+                        </div>
+                        <div class="button-group">
+                            <button class="btn-primary" onclick="testDeleteWebhook()">Delete Webhook</button>
                         </div>
                     </div>
                 </div>
@@ -587,65 +672,78 @@
                 <h2>⚙️ Configuration</h2>
 
                 <div class="form-group">
-                    <label>API Key</label>
-                    <input type="text" id="api_key" value="c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a" placeholder="Your API key">
+                    <label>Environment</label>
+                    <select id="env_select" onchange="applyEnvironment()">
+                        <option value="https://50-deeds-enterprise-testenv-385a4bcc.base44.app">Sandbox (Stripe test mode)</option>
+                        <option value="https://50-deedscom-enterprise-db0653f4.base44.app">Production (real ACH debits)</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Base URL</label>
-                    <input type="text" id="base_url" value="https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi" placeholder="API endpoint URL">
+                    <label>Host</label>
+                    <input type="text" id="base_url" value="https://50-deeds-enterprise-testenv-385a4bcc.base44.app">
+                </div>
+
+                <div class="form-group">
+                    <label>API Key <small style="color:#888">(one per environment)</small></label>
+                    <input type="text" id="api_key" value="c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a">
+                </div>
+
+                <div class="info-box">
+                    Requests go to <code>{host}/functions/enterpriseApi</code> with <code>Authorization: Bearer</code>.
+                    Base44 does not route the documented sub-paths, so the logical method and path travel in the body as
+                    <code>_method</code> / <code>_path</code>. The Request panel shows both forms.
                 </div>
 
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
 
-                <h3 style="color: #667eea; margin-bottom: 15px;">📊 Test Summary</h3>
-
-                <div id="test_summary" style="margin-bottom: 20px;">
-                    <p style="color: #666; text-align: center;">Run tests to see results</p>
-                </div>
+                <h3 style="color: #667eea; margin-bottom: 15px;">📊 Session</h3>
+                <div id="test_summary" style="margin-bottom: 20px;"></div>
 
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
 
                 <h3 style="color: #667eea; margin-bottom: 15px;">🧪 Test Execution</h3>
-
                 <div class="button-group" style="flex-direction: column;">
-                    <button class="btn-primary" onclick="runAllTests()" style="background: #764ba2; margin-bottom: 8px;">Run All 5 Tests</button>
+                    <button class="btn-primary" onclick="runAllTests()" style="background: #764ba2; margin-bottom: 8px;">Run Test Matrix</button>
                     <button class="btn-secondary" onclick="runQuickTest()" style="margin-bottom: 8px;">Quick Pricing Test</button>
                 </div>
-
-                <div id="test_execution" style="margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; font-size: 0.9em; display: none;">
-                    <p><strong>Last Test Run:</strong></p>
-                    <p id="test_results_summary" style="color: #333; margin: 0;"></p>
-                </div>
-
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-
-                <h3 style="color: #667eea; margin-bottom: 15px;">👤 Simulated User</h3>
-
-                <div class="info-box" style="margin-bottom: 10px;">
-                    <strong>Premium Plan Member</strong><br>
-                    Receives discounted pricing based on server-side plan detection.
-                </div>
-
-                <div style="background: #f9f9f9; padding: 12px; border-radius: 6px; font-size: 0.9em;">
-                    <p><strong>User Details:</strong></p>
-                    <p>• Plan: Premium</p>
-                    <p>• Location: Florida</p>
-                    <p>• Service: Deed Recording</p>
-                </div>
+                <div id="test_execution" style="margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; font-size: 0.9em; display: none;"></div>
             </div>
         </div>
 
-        <!-- Response Panel -->
+        <!-- Request / Response Panel -->
         <div class="response-panel">
-            <h2>📤 Response</h2>
+            <h2>📤 Request &amp; Response</h2>
             <div class="response-content">
                 <div>
-                    <h3>Request Details</h3>
-                    <pre id="request_display" style="min-height: 200px;">Waiting for API request...</pre>
+                    <h3 id="request_title">Request</h3>
+
+                    <div class="req-block">
+                        <div class="req-block-head">
+                            <h4>Sent <small>(the exact HTTP request)</small></h4>
+                            <button class="btn-copy" onclick="copyBlock('wire')">Copy</button>
+                        </div>
+                        <pre id="request_wire">Waiting for API request...</pre>
+                    </div>
+
+                    <div class="req-block">
+                        <div class="req-block-head">
+                            <h4>curl <small>(working equivalent)</small></h4>
+                            <button class="btn-copy" onclick="copyBlock('curl')">Copy</button>
+                        </div>
+                        <pre id="request_curl">—</pre>
+                    </div>
+
+                    <div class="req-block">
+                        <div class="req-block-head">
+                            <h4>Documented form <small>(v4.0 reference; 404s on Base44)</small></h4>
+                            <button class="btn-copy" onclick="copyBlock('doc')">Copy</button>
+                        </div>
+                        <pre id="request_doc">—</pre>
+                    </div>
                 </div>
                 <div>
-                    <h3>Response Data</h3>
+                    <h3>Response</h3>
                     <div id="response_status"></div>
                     <pre id="response_display" style="min-height: 200px;">Waiting for API response...</pre>
                 </div>
@@ -654,106 +752,206 @@
     </div>
 
     <script>
-        // Load settings from localStorage on page load
-        function loadSettings() {
-            const savedApiKey = localStorage.getItem('enterpriseApi_key');
-            const savedBaseUrl = localStorage.getItem('enterpriseApi_url');
-
-            if (savedApiKey) {
-                document.getElementById('api_key').value = savedApiKey;
-            }
-            if (savedBaseUrl) {
-                document.getElementById('base_url').value = savedBaseUrl;
-            }
-        }
-
-        // Save settings to localStorage
-        function saveSettings() {
-            localStorage.setItem('enterpriseApi_key', document.getElementById('api_key').value);
-            localStorage.setItem('enterpriseApi_url', document.getElementById('base_url').value);
-        }
-
-        // Load settings on page load
-        window.addEventListener('load', loadSettings);
-
-        // Save settings when inputs change
-        document.addEventListener('DOMContentLoaded', () => {
-            const apiKeyInput = document.getElementById('api_key');
-            const baseUrlInput = document.getElementById('base_url');
-
-            if (apiKeyInput) apiKeyInput.addEventListener('change', saveSettings);
-            if (baseUrlInput) baseUrlInput.addEventListener('change', saveSettings);
-        });
+        const DEED_TYPES = {
+            'v4.0 deed types': [
+                'Individual to individual', 'Individual to trust', 'Individual to company',
+                'Trust to Individual', 'Trust to trust', 'Trust to company',
+                'Company to individual', 'Company to Trust', 'Company to Company',
+            ],
+            'Legacy (FinCEN-classified)': [
+                'Transfer of non-residential property: FinCEN non-reportable (Legacy)',
+                'Transfer to Individual: FinCEN non-reportable (Legacy)',
+                'Transfer from individual to own Revocable Trust as grantor: FinCEN non-reportable (Legacy)',
+                'Transfer due to death of individual: FinCEN non-reportable (Legacy)',
+                'Transfer due to divorce: FinCEN non-reportable (Legacy)',
+                'Transfer due to court order: FinCEN non-reportable (Legacy)',
+                'Transfer to qualified intermediary for 1031 purpose: FinCEN non-reportable (Legacy)',
+                'Transfer to regulated entity: FinCEN non-reportable (Legacy)',
+                'Transfer from entity to Trust: FinCEN reportable (Legacy)',
+                'Transfer to Company: FinCEN reportable (Legacy)',
+            ],
+        };
+        const ORDER_STATUSES = ['Submitted', 'In Review', 'Drafting', 'Awaiting Signature', 'Recording', 'Completed', 'Cancelled'];
+        const API_KEY_MASK = (k) => (k.length > 8 ? '***' + k.slice(-8) : '***');
 
         const API_CONFIG = {
-            baseUrl: () => document.getElementById('base_url').value,
-            apiKey: () => document.getElementById('api_key').value,
+            host: () => document.getElementById('base_url').value.replace(/\/+$/, ''),
+            apiKey: () => document.getElementById('api_key').value.trim(),
+            apiUrl: () => API_CONFIG.host() + '/functions/enterpriseApi',
+            uploadUrl: () => API_CONFIG.host() + '/functions/uploadDocument',
         };
 
         let latestOrderId = null;
-        let testResults = {
-            passed: 0,
-            failed: 0,
-            total: 0,
-        };
+        let latestWebhookId = null;
+        let lastRequestText = { wire: '', curl: '', doc: '' };
 
-        // Tab switching
-        function switchTab(tabName) {
-            const tabs = document.querySelectorAll('.tab-content');
-            const buttons = document.querySelectorAll('.tab');
-
-            tabs.forEach(tab => tab.classList.remove('active'));
-            buttons.forEach(btn => btn.classList.remove('active'));
-
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        // Display request and response
-        function displayRequest(method, path, body) {
-            const display = {
-                method,
-                path,
-                url: API_CONFIG.baseUrl(),
-                headers: { 'Content-Type': 'application/json' },
-                body: {
-                    _path: path,
-                    _method: method,
-                    _api_key: '***' + API_CONFIG.apiKey().slice(-8),
-                    ...body
-                }
-            };
-            document.getElementById('request_display').textContent = JSON.stringify(display, null, 2);
-        }
-
-        function displayResponse(status, data) {
-            const statusClass = status >= 200 && status < 300 ? 'status-success' : 'status-error';
-            document.getElementById('response_status').innerHTML =
-                `<div class="status-badge ${statusClass}">Status: ${status}</div>`;
-            document.getElementById('response_display').textContent = JSON.stringify(data, null, 2);
-        }
-
-        // API Request Helper
-        async function makeRequest(method, path, body = null) {
+        // ---------- Settings (localStorage) ----------
+        function loadSettings() {
             try {
-                displayRequest(method, path, body);
-                document.getElementById('response_display').innerHTML = '<div class="loading"></div> Sending request...';
+                const key = localStorage.getItem('enterpriseApi_key');
+                const host = localStorage.getItem('enterpriseApi_host');
+                if (key) document.getElementById('api_key').value = key;
+                if (host) {
+                    document.getElementById('base_url').value = host;
+                    const sel = document.getElementById('env_select');
+                    if ([...sel.options].some(o => o.value === host)) sel.value = host;
+                }
+            } catch (e) { /* storage unavailable */ }
+        }
 
-                const requestBody = {
-                    _path: path,
-                    _method: method,
-                    _api_key: API_CONFIG.apiKey(),
-                    ...(body || {})
-                };
+        function saveSettings() {
+            try {
+                localStorage.setItem('enterpriseApi_key', document.getElementById('api_key').value);
+                localStorage.setItem('enterpriseApi_host', document.getElementById('base_url').value);
+            } catch (e) { /* storage unavailable */ }
+        }
 
-                const response = await fetch(API_CONFIG.baseUrl(), {
+        function applyEnvironment() {
+            const host = document.getElementById('env_select').value;
+            document.getElementById('base_url').value = host;
+            if (host.includes('db0653f4')) {
+                alert('Production: orders placed here are real and debit the connected bank account. Use a production API key.');
+            }
+            saveSettings();
+        }
+
+        // ---------- UI helpers ----------
+        function switchTab(tabName, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // Display-only: "Company to trust" -> "Company to Trust". The option value keeps the
+        // exact enum string, because the server matches deed_type case-sensitively.
+        function deedTypeLabel(d) {
+            const words = d.split(' ');
+            if (words.length !== 3) return d;
+            return [words[0], words[1], words[2][0].toUpperCase() + words[2].slice(1)].join(' ');
+        }
+
+        function populateSelects() {
+            document.querySelectorAll('.deed-type-select').forEach(sel => {
+                sel.innerHTML = Object.entries(DEED_TYPES).map(([group, items]) =>
+                    `<optgroup label="${group}">${items.map(d => `<option value="${d}">${deedTypeLabel(d)}</option>`).join('')}</optgroup>`
+                ).join('');
+            });
+            document.getElementById('pricing_deed_type').value = 'Transfer from entity to Trust: FinCEN reportable (Legacy)';
+            document.getElementById('order_deed_type').value = 'Individual to trust';
+            document.querySelectorAll('.status-select').forEach(sel => {
+                sel.innerHTML = '<option value="">(any)</option>' + ORDER_STATUSES.map(s => `<option>${s}</option>`).join('');
+            });
+        }
+
+        function newClientReference() {
+            document.getElementById('order_client_reference').value =
+                'TEST-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14) + '-' + Math.random().toString(36).slice(2, 6);
+        }
+
+        function toggleSSNFields() {
+            const isNY = document.getElementById('order_state').value.trim().toUpperCase() === 'NY';
+            document.getElementById('ssn_fields').style.display = isNY ? 'grid' : 'none';
+        }
+
+        function populateLatestOrderId(fieldId) {
+            if (latestOrderId) document.getElementById(fieldId).value = latestOrderId;
+            else alert('No order ID yet. List or create an order first.');
+        }
+
+        function copyBlock(which) {
+            navigator.clipboard.writeText(lastRequestText[which] || '').catch(() => alert('Copy failed'));
+        }
+
+        function shellQuote(s) {
+            return "'" + String(s).replace(/'/g, "'\\''") + "'";
+        }
+
+        // Drops empty-string / null / undefined params so optional filters stay off the wire.
+        function compact(obj) {
+            return Object.fromEntries(Object.entries(obj || {}).filter(([, v]) => v !== '' && v !== null && v !== undefined));
+        }
+
+        // ---------- Request rendering ----------
+        // Returns { display, copy } — display masks the API key, copy carries the real one.
+        function renderJsonRequest(method, path, params) {
+            const url = API_CONFIG.apiUrl();
+            const key = API_CONFIG.apiKey();
+            const body = { _path: path, _method: method, ...params };
+            const bodyJson = JSON.stringify(body, null, 2);
+
+            const wire = (k) =>
+                `POST ${url}\n` +
+                `Authorization: Bearer ${k}\n` +
+                `Content-Type: application/json\n\n` +
+                bodyJson;
+
+            const curl = (k) =>
+                `curl -X POST ${shellQuote(url)} \\\n` +
+                `  -H ${shellQuote('Authorization: Bearer ' + k)} \\\n` +
+                `  -H 'Content-Type: application/json' \\\n` +
+                `  -d ${shellQuote(JSON.stringify(body))}`;
+
+            // Documented REST shape: GET/DELETE carry params as a query string, POST/PUT as JSON.
+            const doc = (k) => {
+                const hasBody = method === 'POST' || method === 'PUT';
+                const qs = !hasBody && Object.keys(params).length
+                    ? '?' + new URLSearchParams(params).toString().replace(/\+/g, '%20')
+                    : '';
+                let s = `curl -X ${method} ${shellQuote(url + path + qs)} \\\n  -H ${shellQuote('Authorization: Bearer ' + k)}`;
+                if (hasBody) {
+                    s += ` \\\n  -H 'Content-Type: application/json' \\\n  -d ${shellQuote(JSON.stringify(params, null, 2))}`;
+                }
+                return s;
+            };
+
+            const masked = API_KEY_MASK(key);
+            return {
+                display: { wire: wire(masked), curl: curl(masked), doc: doc(masked) },
+                copy: { wire: wire(key), curl: curl(key), doc: doc(key) },
+            };
+        }
+
+        function showRequest(title, rendered) {
+            document.getElementById('request_title').textContent = 'Request — ' + title;
+            document.getElementById('request_wire').textContent = rendered.display.wire;
+            document.getElementById('request_curl').textContent = rendered.display.curl;
+            document.getElementById('request_doc').textContent = rendered.display.doc;
+            lastRequestText = rendered.copy;
+        }
+
+        function displayResponse(status, data, ms) {
+            const cls = status >= 200 && status < 300 ? 'status-success' : 'status-error';
+            document.getElementById('response_status').innerHTML =
+                `<div class="status-badge ${cls}">Status: ${status || 'network error'}${ms != null ? ` · ${ms} ms` : ''}</div>`;
+            document.getElementById('response_display').textContent =
+                typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        }
+
+        async function readBody(response) {
+            const text = await response.text();
+            try { return JSON.parse(text); } catch (e) { return text; }
+        }
+
+        // ---------- Transport ----------
+        async function makeRequest(method, path, params = {}) {
+            params = compact(params);
+            showRequest(`${method} ${path}`, renderJsonRequest(method, path, params));
+            document.getElementById('response_status').innerHTML = '';
+            document.getElementById('response_display').innerHTML = '<div class="loading"></div> Sending request...';
+
+            const t0 = performance.now();
+            try {
+                const response = await fetch(API_CONFIG.apiUrl(), {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_CONFIG.apiKey()}`,
+                    },
+                    body: JSON.stringify({ _path: path, _method: method, ...params }),
                 });
-
-                const data = await response.json();
-                displayResponse(response.status, data);
+                const data = await readBody(response);
+                displayResponse(response.status, data, Math.round(performance.now() - t0));
                 return { status: response.status, data };
             } catch (error) {
                 displayResponse(0, { error: error.message });
@@ -761,300 +959,277 @@
             }
         }
 
-        // Toggle SSN fields based on state
-        function toggleSSNFields() {
-            const state = document.getElementById('order_state').value.toUpperCase();
-            const ssnFields = document.getElementById('ssn_fields');
-            const req1 = document.getElementById('ssn_requirement');
-            const req2 = document.getElementById('ssn_requirement2');
-
-            if (state === 'NY') {
-                ssnFields.style.display = 'block';
-                req1.textContent = '(required)';
-                req1.style.color = '#d32f2f';
-                req2.textContent = '(required)';
-                req2.style.color = '#d32f2f';
-            } else {
-                ssnFields.style.display = 'block';
-                req1.textContent = '(optional)';
-                req1.style.color = '#999';
-                req2.textContent = '(optional)';
-                req2.style.color = '#999';
-            }
-        }
-
-        // Pricing Tests
-        function setPricingQuick(state, county) {
-            document.getElementById('pricing_state').value = state;
-            document.getElementById('pricing_county').value = county;
-        }
-
+        // ---------- Endpoints ----------
         async function testGetPricing() {
-            const state = document.getElementById('pricing_state').value;
-            const county = document.getElementById('pricing_county').value;
+            const state = document.getElementById('pricing_state').value.trim().toUpperCase();
+            const county = document.getElementById('pricing_county').value.trim();
             const deedType = document.getElementById('pricing_deed_type').value;
-            const path = `/pricing/${state}/${county}`;
-            await makeRequest('GET', path, { deed_type: deedType });
+            if (!state || !county) return alert('State and county are required');
+            return makeRequest('GET', `/pricing/${encodeURIComponent(state)}/${encodeURIComponent(county)}`, { deed_type: deedType });
         }
 
-        // Orders Tests
         async function testListOrders() {
-            const result = await makeRequest('GET', '/orders');
-            if (result.status === 200 && result.data.orders && result.data.orders.length > 0) {
+            const result = await makeRequest('GET', '/orders', {
+                status: document.getElementById('list_status').value,
+                state: document.getElementById('list_state').value.trim().toUpperCase(),
+                date_from: document.getElementById('list_date_from').value.trim(),
+                date_to: document.getElementById('list_date_to').value.trim(),
+                client_reference: document.getElementById('list_client_reference').value.trim(),
+            });
+            if (result.status === 200 && result.data.orders?.length) {
                 latestOrderId = result.data.orders[0].id;
-                updateTestSummary();
+                updateSessionSummary();
             }
         }
 
-        function populateLatestOrderId() {
-            if (latestOrderId) {
-                document.getElementById('order_id').value = latestOrderId;
-            } else {
-                alert('No order ID available. Run "List All Orders" first.');
-            }
+        async function testOrderHistory() {
+            const limit = parseInt(document.getElementById('hist_limit').value, 10);
+            const offset = parseInt(document.getElementById('hist_offset').value, 10);
+            await makeRequest('GET', '/orders/history', {
+                status: document.getElementById('hist_status').value.trim(),
+                deed_type: document.getElementById('hist_deed_type').value.trim(),
+                sort_by: document.getElementById('hist_sort_by').value,
+                sort_dir: document.getElementById('hist_sort_dir').value,
+                limit: Number.isFinite(limit) ? limit : undefined,
+                offset: Number.isFinite(offset) ? offset : undefined,
+            });
         }
 
         async function testGetOrder() {
-            const orderId = document.getElementById('order_id').value;
-            if (!orderId) {
-                alert('Please enter an order ID');
-                return;
-            }
-            await makeRequest('GET', `/orders/${orderId}`);
+            const orderId = document.getElementById('order_id').value.trim();
+            if (!orderId) return alert('Please enter an order ID');
+            await makeRequest('GET', `/orders/${encodeURIComponent(orderId)}`);
         }
 
         async function testCreateOrder() {
-            const attachments = getAttachmentValues();
-            const state = document.getElementById('order_state').value.toUpperCase();
-            const grantor_ssn = document.getElementById('order_grantor_ssn').value;
-            const grantee_ssn = document.getElementById('order_grantee_ssn').value;
-
+            const state = document.getElementById('order_state').value.trim().toUpperCase();
             const body = {
+                deed_type: document.getElementById('order_deed_type').value,
                 property_address: document.getElementById('order_property').value,
                 grantor_name: document.getElementById('order_grantor').value,
                 grantee_name: document.getElementById('order_grantee').value,
                 contact_name: document.getElementById('order_contact_name').value,
-                deed_type: document.getElementById('order_deed_type').value,
-                county: document.getElementById('order_county').value,
-                state: state,
                 contact_email: document.getElementById('order_email').value,
+                county: document.getElementById('order_county').value,
+                state,
                 additional_instructions: document.getElementById('order_instructions').value,
+                client_reference: document.getElementById('order_client_reference').value.trim(),
             };
-
-            // Add SSN fields if provided (required for NY, optional for others)
-            if (grantor_ssn) {
-                body.grantor_ssn = grantor_ssn;
+            if (state === 'NY') {
+                body.grantor_ssn = document.getElementById('order_grantor_ssn').value;
+                body.grantee_ssn = document.getElementById('order_grantee_ssn').value;
             }
-            if (grantee_ssn) {
-                body.grantee_ssn = grantee_ssn;
-            }
-
-            if (attachments.length > 0) {
-                body.attachments = attachments;
-            }
+            const attachments = getAttachmentValues();
+            if (attachments.length) body.attachments = attachments;
 
             const result = await makeRequest('POST', '/orders', body);
             if (result.status === 201 && result.data.order) {
                 latestOrderId = result.data.order.id;
-                updateTestSummary();
+                updateSessionSummary();
+                newClientReference(); // next submit is a new logical order
             }
         }
 
         function clearOrderForm() {
+            document.getElementById('order_deed_type').value = 'Individual to trust';
             document.getElementById('order_property').value = '123 Main St, Miami, FL 33101';
-            document.getElementById('order_grantor').value = 'John Doe';
-            document.getElementById('order_grantee').value = 'Jane Doe';
+            document.getElementById('order_grantor').value = 'John Doe, individually';
+            document.getElementById('order_grantee').value = 'John Doe, Trustee of the Doe Family Trust dated 01/15/2026';
             document.getElementById('order_contact_name').value = 'John Doe';
+            document.getElementById('order_email').value = 'test@example.com';
             document.getElementById('order_county').value = 'Miami-Dade';
             document.getElementById('order_state').value = 'FL';
             document.getElementById('order_grantor_ssn').value = '';
             document.getElementById('order_grantee_ssn').value = '';
-            document.getElementById('order_email').value = 'test@example.com';
             document.getElementById('order_instructions').value = '';
             document.getElementById('attachments_list').innerHTML = '';
+            newClientReference();
             toggleSSNFields();
         }
 
-        // Attachments Management
         let attachmentCount = 0;
-
         function addAttachment() {
             attachmentCount++;
-            const currentDate = new Date().toISOString();
-            const html = `
+            document.getElementById('attachments_list').insertAdjacentHTML('beforeend', `
                 <div class="attachment-item" id="attachment_${attachmentCount}">
                     <input type="text" placeholder="File URL (https://...)" class="attachment-url">
-                    <input type="text" placeholder="File Name (e.g., deed_draft.pdf)" class="attachment-name">
+                    <input type="text" placeholder="File Name (e.g., existing_deed.pdf)" class="attachment-name">
                     <input type="number" placeholder="File Size (bytes, optional)" class="attachment-size">
-                    <input type="hidden" class="attachment-uploaded-date" value="${currentDate}">
-                    <button class="btn-remove" onclick="removeAttachment(${attachmentCount})">Remove</button>
-                </div>
-            `;
-            document.getElementById('attachments_list').insertAdjacentHTML('beforeend', html);
-        }
-
-        function removeAttachment(id) {
-            const el = document.getElementById(`attachment_${id}`);
-            if (el) el.remove();
+                    <button class="btn-remove" onclick="document.getElementById('attachment_${attachmentCount}').remove()">Remove</button>
+                </div>`);
         }
 
         function getAttachmentValues() {
-            const attachments = [];
+            const out = [];
             document.querySelectorAll('.attachment-item').forEach(item => {
-                const url = item.querySelector('.attachment-url').value;
-                const name = item.querySelector('.attachment-name').value;
+                const url = item.querySelector('.attachment-url').value.trim();
+                const name = item.querySelector('.attachment-name').value.trim();
                 const size = item.querySelector('.attachment-size').value;
-                const uploadedDate = item.querySelector('.attachment-uploaded-date').value;
-
                 if (url && name) {
-                    const attachment = { file_url: url, file_name: name };
-                    if (size) attachment.file_size = parseInt(size);
-                    if (uploadedDate) attachment.uploaded_date = uploadedDate;
-                    attachments.push(attachment);
+                    const a = { file_url: url, file_name: name };
+                    if (size) a.file_size = parseInt(size, 10);
+                    out.push(a);
                 }
             });
-            return attachments;
+            return out;
         }
 
-        // Webhooks Tests
+        async function testUploadDocument() {
+            const file = document.getElementById('upload_file').files[0];
+            if (!file) return alert('Choose a file first');
+            if (file.size > 25 * 1024 * 1024) return alert('File exceeds the 25 MB limit');
+            const orderRef = document.getElementById('upload_order_id').value.trim();
+
+            const url = API_CONFIG.uploadUrl();
+            const key = API_CONFIG.apiKey();
+            const fields = [`file=@${file.name}`].concat(orderRef ? [`order_id=${orderRef}`] : []);
+            const wire = (k) =>
+                `POST ${url}\nAuthorization: Bearer ${k}\nContent-Type: multipart/form-data; boundary=…\n\n` +
+                `file: ${file.name} (${file.type || 'application/octet-stream'}, ${file.size} bytes)` +
+                (orderRef ? `\norder_id: ${orderRef}` : '');
+            const curl = (k) =>
+                `curl -X POST ${shellQuote(url)} \\\n  -H ${shellQuote('Authorization: Bearer ' + k)}` +
+                fields.map(f => ` \\\n  -F ${shellQuote(f)}`).join('');
+            const m = API_KEY_MASK(key);
+            showRequest('POST /uploadDocument', {
+                display: { wire: wire(m), curl: curl(m), doc: curl(m) + '\n\n# Same as documented: uploadDocument is its own function.' },
+                copy: { wire: wire(key), curl: curl(key), doc: curl(key) },
+            });
+            document.getElementById('response_display').innerHTML = '<div class="loading"></div> Uploading...';
+
+            const form = new FormData();
+            form.append('file', file);
+            if (orderRef) form.append('order_id', orderRef);
+            const t0 = performance.now();
+            try {
+                const response = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: form });
+                displayResponse(response.status, await readBody(response), Math.round(performance.now() - t0));
+            } catch (error) {
+                displayResponse(0, { error: error.message });
+            }
+        }
+
         async function testRegisterWebhook() {
-            const url = document.getElementById('webhook_url').value;
-            if (!url) {
-                alert('Please enter a webhook URL');
-                return;
+            const url = document.getElementById('webhook_url').value.trim();
+            if (!url) return alert('Please enter a webhook URL');
+            const result = await makeRequest('POST', '/webhooks/register', {
+                url, description: document.getElementById('webhook_description').value.trim(),
+            });
+            if (result.status === 201 && result.data.webhook) {
+                latestWebhookId = result.data.webhook.id;
+                document.getElementById('webhook_id').value = latestWebhookId;
+                updateSessionSummary();
             }
-            const body = { url };
-            const description = document.getElementById('webhook_description').value;
-            if (description) body.description = description;
-            await makeRequest('POST', '/webhooks/register', body);
         }
 
-        // Test Summary
-        function updateTestSummary() {
-            const html = `
+        async function testDeleteWebhook() {
+            const id = document.getElementById('webhook_id').value.trim();
+            if (!id) return alert('Please enter a webhook ID');
+            await makeRequest('DELETE', `/webhooks/${encodeURIComponent(id)}`);
+        }
+
+        function updateSessionSummary() {
+            document.getElementById('test_summary').innerHTML = `
                 <div style="background: #f9f9f9; padding: 12px; border-radius: 6px; font-size: 0.9em;">
-                    <p><strong>Latest Order ID:</strong></p>
-                    <p style="word-break: break-all; color: #667eea;">${latestOrderId || 'None'}</p>
-                </div>
-            `;
-            document.getElementById('test_summary').innerHTML = html;
+                    <p><strong>Latest Order ID:</strong> <span style="word-break: break-all; color: #667eea;">${latestOrderId || 'None'}</span></p>
+                    <p><strong>Latest Webhook ID:</strong> <span style="word-break: break-all; color: #667eea;">${latestWebhookId || 'None'}</span></p>
+                </div>`;
         }
 
-        // Quick Pricing Test
+        // ---------- Test runs ----------
         async function runQuickTest() {
-            const defaultDeedType = document.getElementById('pricing_deed_type').value || 'Quitclaim Deed between Individuals (Add/Remove name)';
-            await makeRequest('GET', '/pricing/FL/Walton', { deed_type: defaultDeedType });
-            document.getElementById('test_execution').style.display = 'block';
-            document.getElementById('test_results_summary').textContent = '✓ Quick test completed - check response on the right';
+            await makeRequest('GET', '/pricing/FL/Miami-Dade', { deed_type: document.getElementById('pricing_deed_type').value });
         }
 
-        // Run All Tests
+        // Mirrors test-api.js. Each step's request/response flashes through the panel; the list below records outcomes.
         async function runAllTests() {
-            testResults = { passed: 0, failed: 0, total: 0 };
+            const box = document.getElementById('test_execution');
+            box.style.display = 'block';
+            box.innerHTML = '<p style="color: #ff9800; margin: 0;">⏳ Running tests...</p><ul class="result-list" id="result_list"></ul>';
+            const list = document.getElementById('result_list');
+            const results = [];
+            const record = (name, ok, status) => {
+                results.push(ok);
+                list.insertAdjacentHTML('beforeend', `<li class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'} ${name} <small>(${status})</small></li>`);
+            };
+            const ref = 'TEST-' + Date.now();
+            const order = {
+                deed_type: 'Individual to trust',
+                property_address: '123 Main St, Miami, FL 33101',
+                grantor_name: 'John Doe, individually',
+                grantee_name: 'John Doe, Trustee of the Doe Family Trust dated 01/15/2026',
+                contact_name: 'John Doe', contact_email: 'test@example.com',
+                county: 'Miami-Dade', state: 'FL', client_reference: ref,
+            };
+            const ny = { property_address: '500 5th Ave, New York, NY 10110', county: 'New York', state: 'NY' };
+            let r;
 
-            document.getElementById('test_execution').style.display = 'block';
-            document.getElementById('test_results_summary').innerHTML = '<p style="color: #ff9800; margin: 0;">⏳ Running tests...</p>';
+            r = await makeRequest('GET', '/pricing/FL/Miami-Dade', { deed_type: 'Transfer from entity to Trust: FinCEN reportable (Legacy)' });
+            record('Pricing FL/Miami-Dade (legacy reportable)', r.status === 200 && r.data.fincen_required === true, r.status);
 
-            // Test 1: Get Pricing (Walton - non-reportable deed type)
-            testResults.total++;
-            const pricing = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer to Individual: FinCEN non-reportable' });
-            if (pricing.status === 200) testResults.passed++; else testResults.failed++;
+            r = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Individual to individual' });
+            record('Pricing FL/Walton (Individual to individual)', r.status === 200, r.status);
 
-            await sleep(500);
+            r = await makeRequest('GET', '/orders', { state: 'FL' });
+            record('List orders', r.status === 200 && Array.isArray(r.data.orders), r.status);
 
-            // Test 2: List Orders
-            testResults.total++;
-            const orders = await makeRequest('GET', '/orders');
-            if (orders.status === 200) {
-                testResults.passed++;
-                if (orders.data.orders && orders.data.orders.length > 0) {
-                    latestOrderId = orders.data.orders[0].id;
-                }
-            } else {
-                testResults.failed++;
-            }
+            r = await makeRequest('GET', '/orders/history', { limit: 5 });
+            record('Order history', r.status === 200 && !!r.data.pagination, r.status);
 
-            await sleep(500);
+            r = await makeRequest('POST', '/orders', order);
+            const created = r.status === 201 && r.data.order;
+            record('Create order (FL, no SSN)', !!created, r.status);
+            if (created) { latestOrderId = r.data.order.id; updateSessionSummary(); }
 
-            // Test 3: Get Specific Order
+            r = await makeRequest('GET', '/orders', { client_reference: ref });
+            record('Lookup by client_reference', r.status === 200 && r.data.orders?.length === 1, r.status);
+
             if (latestOrderId) {
-                testResults.total++;
-                const order = await makeRequest('GET', `/orders/${latestOrderId}`);
-                if (order.status === 200) testResults.passed++; else testResults.failed++;
+                r = await makeRequest('GET', `/orders/${latestOrderId}`);
+                record('Get specific order', r.status === 200, r.status);
             }
 
-            await sleep(500);
+            r = await makeRequest('POST', '/orders', { ...order, ...ny, client_reference: ref + '-ny1' });
+            record('NY without SSNs → 400', r.status === 400 && /ssn/i.test(JSON.stringify(r.data)), r.status);
 
-            // Test 4: Create Order with FinCEN-reportable deed type (includes $95 fee)
-            testResults.total++;
-            const createOrder = await makeRequest('POST', '/orders', {
-                property_address: '789 Oak St, Tampa, FL 33602',
-                grantor_name: 'Jane Smith',
-                grantee_name: 'John Smith',
-                contact_name: 'Jane Smith',
-                deed_type: 'Transfer to Company: FinCEN reportable',
-                county: 'Hillsborough',
-                state: 'FL',
-                contact_email: 'jane@example.com',
-                attachments: [{
-                    file_url: 'https://example.com/deed.pdf',
-                    file_name: 'deed.pdf',
-                    file_size: 102400,
-                    uploaded_date: new Date().toISOString()
-                }]
+            r = await makeRequest('POST', '/orders', {
+                ...order, ...ny, deed_type: 'Individual to company', client_reference: ref + '-ny2',
+                grantor_ssn: '123-45-6789', grantee_ssn: '987-65-4321',
             });
-            if (createOrder.status === 201) testResults.passed++; else testResults.failed++;
+            record('NY with SSNs', r.status === 201, r.status);
 
-            await sleep(500);
+            r = await makeRequest('POST', '/orders', { ...order, deed_type: 'Company to Trust', client_reference: ref + '-case' });
+            record('Capitalized deed type "Company to Trust"', r.status === 201, r.status);
 
-            // Test 5: Register Webhook
-            testResults.total++;
-            const webhook = await makeRequest('POST', '/webhooks/register', {
-                url: 'https://example.com/webhook'
-            });
-            if (webhook.status === 201) testResults.passed++; else testResults.failed++;
+            r = await makeRequest('POST', '/orders', { deed_type: 'Individual to individual' });
+            record('Malformed order → 400', r.status === 400 && !!r.data.error, r.status);
 
-            await sleep(500);
+            r = await makeRequest('POST', '/webhooks/register', { url: 'https://example.com/webhooks/50deeds', description: 'UI test' });
+            const whId = r.status === 201 && r.data.webhook?.id;
+            record('Register webhook', !!whId, r.status);
 
-            // Test 6: Create Order with NY State and FinCEN deed type (includes SSN fields + $95 fee)
-            testResults.total++;
-            const createOrderNY = await makeRequest('POST', '/orders', {
-                property_address: '500 5th Ave, New York, NY 10110',
-                grantor_name: 'Alice Johnson',
-                grantee_name: 'Bob Wilson',
-                contact_name: 'Alice Johnson',
-                deed_type: 'Transfer from entity to Trust: FinCEN reportable',
-                county: 'New York',
-                state: 'NY',
-                contact_email: 'alice@example.com',
-                grantor_ssn: '123-45-6789',
-                grantee_ssn: '987-65-4321'
-            });
-            if (createOrderNY.status === 201) testResults.passed++; else testResults.failed++;
+            r = await makeRequest('DELETE', `/webhooks/${whId || 'wh_missing'}`);
+            record('Delete webhook', r.status === 200 && r.data.success === true, r.status);
 
-            // Display summary
-            const statusClass = testResults.passed === testResults.total ? 'status-success' : 'status-error';
-            const summary = `
-                <div style="background: ${testResults.passed === testResults.total ? '#e8f5e9' : '#ffebee'}; padding: 12px; border-radius: 6px; border-left: 4px solid ${testResults.passed === testResults.total ? '#4CAF50' : '#f44336'};">
-                    <p style="font-size: 1.1em; color: #333; margin: 0 0 8px 0;"><strong>Test Results:</strong></p>
-                    <p style="color: #4CAF50; font-size: 0.95em; margin: 4px 0;">✓ Passed: ${testResults.passed}</p>
-                    <p style="color: #f44336; font-size: 0.95em; margin: 4px 0;">✗ Failed: ${testResults.failed}</p>
-                    <p style="color: #667eea; font-size: 1.05em; font-weight: bold; margin: 8px 0 0 0;">${testResults.passed}/${testResults.total} tests passing</p>
-                </div>
-            `;
-            document.getElementById('test_execution').innerHTML = summary;
-            document.getElementById('test_execution').style.display = 'block';
+            const passed = results.filter(Boolean).length;
+            const allOk = passed === results.length;
+            box.querySelector('p').outerHTML =
+                `<p style="font-weight: bold; color: ${allOk ? '#2e7d32' : '#c62828'}; margin: 0;">${passed}/${results.length} passing</p>`;
         }
 
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        // Initialize
-        window.addEventListener('load', () => {
-            updateTestSummary();
-            displayRequest('GET', '/pricing/FL/Walton', {});
-            document.getElementById('response_display').textContent = 'Waiting for API response...';
+        // ---------- Init ----------
+        document.addEventListener('DOMContentLoaded', () => {
+            populateSelects();
+            loadSettings();
+            newClientReference();
+            updateSessionSummary();
+            document.getElementById('api_key').addEventListener('change', saveSettings);
+            document.getElementById('base_url').addEventListener('change', saveSettings);
+            // Preview the pricing request before anything is sent.
+            const state = document.getElementById('pricing_state').value;
+            const county = document.getElementById('pricing_county').value;
+            showRequest(`GET /pricing/${state}/${county} (preview)`,
+                renderJsonRequest('GET', `/pricing/${state}/${county}`, { deed_type: document.getElementById('pricing_deed_type').value }));
         });
     </script>
 </body>

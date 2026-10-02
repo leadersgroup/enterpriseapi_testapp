@@ -1,214 +1,223 @@
 #!/usr/bin/env node
 
+// 50Deeds Enterprise API v4.0 test suite (sandbox).
+//
+// Transport note: the v4.0 reference documents REST-style URLs
+// (GET /functions/enterpriseApi/pricing/FL/Miami-Dade?deed_type=...), but Base44
+// does not route sub-paths to a function — those URLs return 404
+// "Backend function 'enterpriseApi/pricing/...' not found". So every call is a
+// POST to the function root with the logical path/method in the body (_path,
+// _method). Query params for GETs go in the body too. Auth uses the documented
+// Authorization: Bearer header.
+
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 
-const BASE_URL = 'https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi';
-const API_KEY = 'c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a';
+const HOST = process.env.API_HOST || 'https://50-deeds-enterprise-testenv-385a4bcc.base44.app';
+const API_KEY = process.env.API_KEY || 'c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a';
+const API_URL = `${HOST}/functions/enterpriseApi`;
+const UPLOAD_URL = `${HOST}/functions/uploadDocument`;
 
-// Utility function to make HTTPS requests
-// Base44 functions take the path as a request body parameter, not URL path
-function makeRequest(method, apiPath, body = null) {
+function httpRequest(url, headers, payload) {
   return new Promise((resolve, reject) => {
-    const url = new URL(BASE_URL);
-
-    // Construct the request body with _path, _method, and _api_key (Base44 format)
-    const requestBody = {
-      _path: apiPath,
-      _method: method,
-      _api_key: API_KEY,
-      ...(body || {}),
-    };
-
-    const options = {
-      hostname: url.hostname,
-      path: url.pathname,
-      method: 'POST', // Base44 functions always receive POST
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
-
-    console.log(`\n${'='.repeat(70)}`);
-    console.log(`REQUEST: ${method} ${apiPath}`);
-    console.log(`Base44 Function URL: ${BASE_URL}`);
-    console.log(`Headers: Content-Type: application/json`);
-    console.log(`Body (with _api_key):`);
-    console.log(`${JSON.stringify(requestBody, null, 2)}`);
-    console.log('='.repeat(70));
-
-    const req = https.request(options, (res) => {
-      let data = '';
-
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      res.on('end', () => {
-        console.log(`\nRESPONSE Status: ${res.statusCode}`);
-        try {
-          const parsed = JSON.parse(data);
-          console.log(`Body: ${JSON.stringify(parsed, null, 2)}`);
-        } catch (e) {
-          console.log(`Body: ${data}`);
-        }
-
-        resolve({
-          status: res.statusCode,
-          headers: res.headers,
-          body: data,
-          parsedBody: tryParseJSON(data),
+    const u = new URL(url);
+    const req = https.request(
+      { hostname: u.hostname, path: u.pathname, method: 'POST', headers },
+      (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => {
+          let parsed;
+          try { parsed = JSON.parse(data); } catch (e) { parsed = data; }
+          resolve({ status: res.statusCode, data: parsed });
         });
-      });
-    });
-
+      }
+    );
     req.on('error', reject);
-
-    // Write the request body with path and method
-    req.write(JSON.stringify(requestBody));
+    req.write(payload);
     req.end();
   });
 }
 
-function tryParseJSON(str) {
-  try {
-    return JSON.parse(str);
-  } catch (e) {
-    return str;
-  }
+async function api(method, apiPath, params = {}) {
+  const body = { _path: apiPath, _method: method, ...params };
+  console.log(`\n${'='.repeat(70)}`);
+  console.log(`REQUEST: ${method} ${apiPath}`);
+  console.log(`POST ${API_URL}`);
+  console.log(`Authorization: Bearer ***${API_KEY.slice(-8)}`);
+  console.log(JSON.stringify(body, null, 2));
+  const res = await httpRequest(
+    API_URL,
+    { 'Content-Type': 'application/json', Authorization: `Bearer ${API_KEY}` },
+    JSON.stringify(body)
+  );
+  console.log(`\nRESPONSE ${res.status}`);
+  console.log(typeof res.data === 'string' ? res.data : JSON.stringify(res.data, null, 2));
+  return res;
 }
 
-function checkStatus(response, expectedStatus, testName) {
-  const pass = response.status === expectedStatus;
-  const status = pass ? '✓ PASS' : '✗ FAIL';
-  console.log(`\n${status}: ${testName}`);
-  console.log(`  Expected: ${expectedStatus}, Got: ${response.status}`);
-  return pass;
+async function upload(filePath, orderId) {
+  const boundary = '----50deeds' + Date.now();
+  const parts = [
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${path.basename(filePath)}"\r\n` +
+      `Content-Type: application/pdf\r\n\r\n`
+    ),
+    fs.readFileSync(filePath),
+    Buffer.from('\r\n'),
+  ];
+  if (orderId) {
+    parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="order_id"\r\n\r\n${orderId}\r\n`));
+  }
+  parts.push(Buffer.from(`--${boundary}--\r\n`));
+  const payload = Buffer.concat(parts);
+
+  console.log(`\n${'='.repeat(70)}`);
+  console.log(`REQUEST: POST ${UPLOAD_URL} (multipart, order_id=${orderId || '-'})`);
+  const res = await httpRequest(
+    UPLOAD_URL,
+    { 'Content-Type': `multipart/form-data; boundary=${boundary}`, Authorization: `Bearer ${API_KEY}`, 'Content-Length': payload.length },
+    payload
+  );
+  console.log(`\nRESPONSE ${res.status}`);
+  console.log(JSON.stringify(res.data, null, 2));
+  return res;
 }
 
-async function runTests() {
-  const results = [];
-  let orderId = null;
+const results = [];
+function check(name, res, expected, extra = true) {
+  const ok = expected.includes(res.status) && extra;
+  console.log(`\n${ok ? '✓ PASS' : '✗ FAIL'}: ${name} (expected ${expected.join('/')}, got ${res.status})`);
+  results.push({ name, pass: ok });
+  return ok;
+}
 
-  console.log('\n' + '█'.repeat(70));
-  console.log('Enterprise API Test Suite');
-  console.log('█'.repeat(70));
-
-  // Test 1: Get Pricing (FL/Walton - has specific pricing)
-  try {
-    const pricingResponse = await makeRequest('GET', '/pricing/FL/Walton', { deed_type: 'Transfer to Individual: FinCEN non-reportable' });
-    // Returns Walton County specific pricing
-    results.push({
-      name: 'Get Pricing (FL/Walton)',
-      pass: checkStatus(pricingResponse, 200, 'Get Pricing - Should return 200 with Walton County pricing'),
-    });
-  } catch (error) {
-    console.error('✗ FAIL: Get Pricing - Request failed');
-    console.error(`Error: ${error.message}`);
-    results.push({ name: 'Get Pricing (FL/Walton)', pass: false });
-  }
-
-  // Test 2: List Orders
-  try {
-    const ordersResponse = await makeRequest('GET', '/orders');
-    const passed = checkStatus(ordersResponse, 200, 'List Orders - Should return 200');
-    results.push({
-      name: 'List Orders',
-      pass: passed,
-    });
-    // Capture an order ID for the next test
-    if (ordersResponse.parsedBody && ordersResponse.parsedBody.orders && ordersResponse.parsedBody.orders.length > 0) {
-      orderId = ordersResponse.parsedBody.orders[0].id;
-    }
-  } catch (error) {
-    console.error('✗ FAIL: List Orders - Request failed');
-    console.error(`Error: ${error.message}`);
-    results.push({ name: 'List Orders', pass: false });
-  }
-
-  // Test 3: Get Specific Order (using the first order ID from the list)
-  try {
-    const path = orderId ? `/orders/${orderId}` : '/orders/invalid-id';
-    const orderResponse = await makeRequest('GET', path);
-    results.push({
-      name: 'Get Specific Order',
-      pass: checkStatus(orderResponse, 200, 'Get Specific Order - Should return 200'),
-    });
-  } catch (error) {
-    console.error('✗ FAIL: Get Specific Order - Request failed');
-    console.error(`Error: ${error.message}`);
-    results.push({ name: 'Get Specific Order', pass: false });
-  }
-
-  // Test 4: Create Order with FinCEN-reportable deed type (Server determines pricing based on user plan)
-  const createOrderPayload = {
+function baseOrder(overrides = {}) {
+  return {
+    deed_type: 'Individual to trust',
     property_address: '123 Main St, Miami, FL 33101',
-    grantor_name: 'John Doe',
-    grantee_name: 'Jane Doe',
+    grantor_name: 'John Doe, individually',
+    grantee_name: 'John Doe, Trustee of the Doe Family Trust dated 01/15/2026',
     contact_name: 'John Doe',
-    deed_type: 'Transfer from entity to Trust: FinCEN reportable',
+    contact_email: 'test@example.com',
     county: 'Miami-Dade',
     state: 'FL',
-    contact_email: 'test@example.com',
-    additional_instructions: 'Test order',
-    attachments: [
-      {
-        file_url: 'https://example.com/documents/deed_draft.pdf',
-        file_name: 'deed_draft.pdf',
-        file_size: 102400,
-        uploaded_date: '2026-03-06T14:30:00Z',
-      },
-    ],
+    additional_instructions: 'Automated sandbox test order',
+    client_reference: `TEST-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    ...overrides,
   };
-
-  try {
-    const createResponse = await makeRequest('POST', '/orders', createOrderPayload);
-    const isExpectedStatus = createResponse.status === 201 || createResponse.status === 200;
-    results.push({
-      name: 'Create Order',
-      pass: checkStatus(createResponse, 201, 'Create Order - Should return 201'),
-    });
-  } catch (error) {
-    console.error('✗ FAIL: Create Order - Request failed');
-    console.error(`Error: ${error.message}`);
-    results.push({ name: 'Create Order', pass: false });
-  }
-
-  // Test 5: Register Webhook
-  const webhookPayload = {
-    url: 'https://your-endpoint.com/webhook',
-  };
-
-  try {
-    const webhookResponse = await makeRequest('POST', '/webhooks/register', webhookPayload);
-    const isExpectedStatus = webhookResponse.status === 200 || webhookResponse.status === 201;
-    results.push({
-      name: 'Register Webhook',
-      pass: checkStatus(webhookResponse, 201, 'Register Webhook - Should return 201'),
-    });
-  } catch (error) {
-    console.error('✗ FAIL: Register Webhook - Request failed');
-    console.error(`Error: ${error.message}`);
-    results.push({ name: 'Register Webhook', pass: false });
-  }
-
-  // Summary
-  console.log('\n' + '█'.repeat(70));
-  console.log('TEST SUMMARY');
-  console.log('█'.repeat(70));
-  results.forEach((result) => {
-    const status = result.pass ? '✓' : '✗';
-    console.log(`${status} ${result.name}`);
-  });
-
-  const passCount = results.filter((r) => r.pass).length;
-  const totalCount = results.length;
-  console.log(`\nTotal: ${passCount}/${totalCount} passed`);
-  console.log('█'.repeat(70) + '\n');
-
-  process.exit(passCount === totalCount ? 0 : 1);
 }
 
-runTests().catch((error) => {
-  console.error('Fatal error:', error);
+async function step(name, fn) {
+  try {
+    await fn();
+  } catch (e) {
+    console.error(`✗ FAIL: ${name} - ${e.message}`);
+    results.push({ name, pass: false });
+  }
+}
+
+async function run() {
+  console.log(`\n${'█'.repeat(70)}\n50Deeds Enterprise API v4.0 Test Suite\nHost: ${HOST}\n${'█'.repeat(70)}`);
+  let orderId = null;
+  let webhookId = null;
+
+  await step('Pricing: FL/Miami-Dade, legacy reportable', async () => {
+    const r = await api('GET', '/pricing/FL/Miami-Dade', {
+      deed_type: 'Transfer from entity to Trust: FinCEN reportable (Legacy)',
+    });
+    check('Pricing: FL/Miami-Dade, legacy reportable', r, [200], r.data?.fincen_required === true);
+  });
+
+  await step('Pricing: FL/Walton, Individual to individual', async () => {
+    const r = await api('GET', '/pricing/FL/Walton', { deed_type: 'Individual to individual' });
+    check('Pricing: FL/Walton, Individual to individual', r, [200], typeof r.data?.total === 'number');
+  });
+
+  await step('List orders', async () => {
+    const r = await api('GET', '/orders', { state: 'FL' });
+    check('List orders', r, [200], Array.isArray(r.data?.orders));
+  });
+
+  await step('Order history (paginated)', async () => {
+    const r = await api('GET', '/orders/history', { limit: 5, sort_by: 'created_date', sort_dir: 'desc' });
+    check('Order history (paginated)', r, [200], !!r.data?.pagination);
+  });
+
+  // Create + idempotency lookup by client_reference
+  const order = baseOrder();
+  await step('Create order (FL, no SSN)', async () => {
+    const r = await api('POST', '/orders', order);
+    if (check('Create order (FL, no SSN)', r, [201], !!r.data?.order?.id)) orderId = r.data.order.id;
+  });
+
+  await step('Lookup by client_reference', async () => {
+    const r = await api('GET', '/orders', { client_reference: order.client_reference });
+    check('Lookup by client_reference', r, [200], r.data?.orders?.length === 1);
+  });
+
+  await step('Get specific order', async () => {
+    const r = await api('GET', `/orders/${orderId || 'invalid-id'}`);
+    check('Get specific order', r, [200], r.data?.id === orderId);
+  });
+
+  await step('Upload document to order', async () => {
+    const tmp = path.join(require('os').tmpdir(), `50deeds-test-${Date.now()}.pdf`);
+    fs.writeFileSync(tmp, '%PDF-1.4\n% 50deeds sandbox test\n');
+    const r = await upload(tmp, orderId);
+    fs.unlinkSync(tmp);
+    check('Upload document to order', r, [200, 201], !!r.data?.file_url);
+  });
+
+  await step('NY order without SSNs -> 400', async () => {
+    const r = await api('POST', '/orders', baseOrder({
+      property_address: '500 5th Ave, New York, NY 10110', county: 'New York', state: 'NY',
+    }));
+    check('NY order without SSNs -> 400', r, [400], /ssn/i.test(JSON.stringify(r.data)));
+  });
+
+  await step('NY order with SSNs', async () => {
+    const r = await api('POST', '/orders', baseOrder({
+      deed_type: 'Individual to company',
+      property_address: '500 5th Ave, New York, NY 10110', county: 'New York', state: 'NY',
+      grantor_ssn: '123-45-6789', grantee_ssn: '987-65-4321',
+    }));
+    check('NY order with SSNs', r, [201]);
+  });
+
+  // deed_type is matched case-sensitively against the Order entity enum, which capitalizes
+  // "Trust to Individual", "Company to Trust" and "Company to Company".
+  await step('Capitalized deed_type "Company to Trust" accepted', async () => {
+    const r = await api('POST', '/orders', baseOrder({ deed_type: 'Company to Trust' }));
+    check('Capitalized deed_type "Company to Trust" accepted', r, [201]);
+  });
+
+  await step('Malformed order -> 400', async () => {
+    const r = await api('POST', '/orders', { deed_type: 'Individual to individual' });
+    check('Malformed order -> 400', r, [400], !!r.data?.error);
+  });
+
+  await step('Register webhook', async () => {
+    const r = await api('POST', '/webhooks/register', {
+      url: 'https://example.com/webhooks/50deeds', description: 'Automated test',
+    });
+    if (check('Register webhook', r, [201], !!r.data?.webhook?.id)) webhookId = r.data.webhook.id;
+  });
+
+  await step('Delete webhook', async () => {
+    const r = await api('DELETE', `/webhooks/${webhookId || 'wh_missing'}`);
+    check('Delete webhook', r, [200], r.data?.success === true);
+  });
+
+  console.log(`\n${'█'.repeat(70)}\nTEST SUMMARY\n${'█'.repeat(70)}`);
+  results.forEach((r) => console.log(`${r.pass ? '✓' : '✗'} ${r.name}`));
+  const passed = results.filter((r) => r.pass).length;
+  console.log(`\nTotal: ${passed}/${results.length} passed\n`);
+  process.exit(passed === results.length ? 0 : 1);
+}
+
+run().catch((e) => {
+  console.error('Fatal error:', e);
   process.exit(1);
 });
