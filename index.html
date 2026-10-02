@@ -823,10 +823,18 @@
             btn.classList.add('active');
         }
 
+        // Display-only: "Company to trust" -> "Company to Trust". The option value keeps the
+        // exact enum string, because the server matches deed_type case-sensitively.
+        function deedTypeLabel(d) {
+            const words = d.split(' ');
+            if (words.length !== 3) return d;
+            return [words[0], words[1], words[2][0].toUpperCase() + words[2].slice(1)].join(' ');
+        }
+
         function populateSelects() {
             document.querySelectorAll('.deed-type-select').forEach(sel => {
                 sel.innerHTML = Object.entries(DEED_TYPES).map(([group, items]) =>
-                    `<optgroup label="${group}">${items.map(d => `<option value="${d}">${d}</option>`).join('')}</optgroup>`
+                    `<optgroup label="${group}">${items.map(d => `<option value="${d}">${deedTypeLabel(d)}</option>`).join('')}</optgroup>`
                 ).join('');
             });
             document.getElementById('pricing_deed_type').value = 'Transfer from entity to Trust: FinCEN reportable (Legacy)';
