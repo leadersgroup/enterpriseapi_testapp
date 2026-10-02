@@ -71,7 +71,7 @@ def step(name, fn):
 def base_order(**overrides):
     ref = "".join(random.choices(string.ascii_lowercase + string.digits, k=5))
     order = {
-        "deed_type": "Individual to trust",
+        "deed_type": "Individual to Trust",
         "property_address": "123 Main St, Miami, FL 33101",
         "grantor_name": "John Doe, individually",
         "grantee_name": "John Doe, Trustee of the Doe Family Trust dated 01/15/2026",
@@ -92,12 +92,12 @@ def main():
 
     def pricing_legacy():
         r = api("GET", "/pricing/FL/Miami-Dade",
-                deed_type="Transfer from entity to Trust: FinCEN reportable (Legacy)")
-        check("Pricing: FL/Miami-Dade, legacy reportable", r, [200], body_of(r).get("fincen_required") is True)
+                deed_type="Transfer from entity to Trust: FinCEN reportable")
+        check("Pricing: FL/Miami-Dade, FinCEN reportable", r, [200], body_of(r).get("fincen_required") is True)
 
     def pricing_new():
-        r = api("GET", "/pricing/FL/Walton", deed_type="Individual to individual")
-        check("Pricing: FL/Walton, Individual to individual", r, [200],
+        r = api("GET", "/pricing/FL/Walton", deed_type="Individual to Individual")
+        check("Pricing: FL/Walton, Individual to Individual", r, [200],
               isinstance(body_of(r).get("total"), (int, float)))
 
     def list_orders():
@@ -146,18 +146,21 @@ def main():
         check("NY order without SSNs -> 400", r, [400], "ssn" in r.text.lower())
 
     def ny_with_ssn():
-        r = api("POST", "/orders", **base_order(deed_type="Individual to company", grantor_ssn="123-45-6789",
+        r = api("POST", "/orders", **base_order(deed_type="Individual to Company", grantor_ssn="123-45-6789",
                                                 grantee_ssn="987-65-4321", **ny))
         check("NY order with SSNs", r, [201])
 
-    # deed_type is matched case-sensitively against the Order entity enum, which capitalizes
-    # "Trust to Individual", "Company to Trust" and "Company to Company".
+    # Old spellings (lowercase third word, " (Legacy)" suffix) are still accepted and
+    # stored in the canonical form.
     def doc_casing():
-        r = api("POST", "/orders", **base_order(deed_type="Company to Trust"))
-        check('Capitalized deed_type "Company to Trust" accepted', r, [201])
+        created = api("POST", "/orders", **base_order(deed_type="Individual to individual"))
+        oid = body_of(created).get("order", {}).get("id")
+        r = api("GET", f"/orders/{oid}") if oid else created
+        check('Old spelling stored as "Individual to Individual"', r, [200],
+              body_of(r).get("deed_type") == "Individual to Individual")
 
     def malformed():
-        r = api("POST", "/orders", deed_type="Individual to individual")
+        r = api("POST", "/orders", deed_type="Individual to Individual")
         check("Malformed order -> 400", r, [400], body_of(r).get("error"))
 
     def register_webhook():
@@ -170,8 +173,8 @@ def main():
         r = api("DELETE", f"/webhooks/{state['webhook_id'] or 'wh_missing'}")
         check("Delete webhook", r, [200], body_of(r).get("success") is True)
 
-    step("Pricing: FL/Miami-Dade, legacy reportable", pricing_legacy)
-    step("Pricing: FL/Walton, Individual to individual", pricing_new)
+    step("Pricing: FL/Miami-Dade, FinCEN reportable", pricing_legacy)
+    step("Pricing: FL/Walton, Individual to Individual", pricing_new)
     step("List orders", list_orders)
     step("Order history (paginated)", history)
     step("Create order (FL, no SSN)", create)
@@ -180,7 +183,7 @@ def main():
     step("Upload document to order", upload_doc)
     step("NY order without SSNs -> 400", ny_missing_ssn)
     step("NY order with SSNs", ny_with_ssn)
-    step('Capitalized deed_type "Company to Trust" accepted', doc_casing)
+    step('Old spelling stored as "Individual to Individual"', doc_casing)
     step("Malformed order -> 400", malformed)
     step("Register webhook", register_webhook)
     step("Delete webhook", delete_webhook)
