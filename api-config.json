@@ -1,46 +1,20 @@
 {
-  "base_url": "https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi",
+  "api_version": "4.0",
+  "host": "https://50-deeds-enterprise-testenv-385a4bcc.base44.app",
+  "api_url": "https://50-deeds-enterprise-testenv-385a4bcc.base44.app/functions/enterpriseApi",
+  "upload_url": "https://50-deeds-enterprise-testenv-385a4bcc.base44.app/functions/uploadDocument",
   "api_key": "c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a",
+  "auth_header": "Authorization: Bearer <api_key>",
+  "transport": "POST api_url with JSON body {_path, _method, ...params}; documented REST sub-paths 404 on Base44",
   "endpoints": {
-    "get_pricing": {
-      "method": "GET",
-      "path": "/pricing",
-      "expected_status": 200,
-      "example": "/pricing?state=FL&county=Miami-Dade"
-    },
-    "list_orders": {
-      "method": "GET",
-      "path": "/orders",
-      "expected_status": 200
-    },
-    "get_order": {
-      "method": "GET",
-      "path": "/orders",
-      "expected_status": 200,
-      "example": "/orders?order_id=test-order-id-123"
-    },
-    "create_order": {
-      "method": "POST",
-      "path": "/orders",
-      "expected_status": 201,
-      "body": {
-        "property_address": "123 Main St, Miami, FL 33101",
-        "grantor_name": "John Doe",
-        "grantee_name": "Jane Doe",
-        "deed_type": "Quitclaim Deed between Individuals (Add/Remove name)",
-        "county": "Miami-Dade",
-        "state": "FL",
-        "contact_email": "test@example.com",
-        "additional_instructions": "Test order"
-      }
-    },
-    "register_webhook": {
-      "method": "POST",
-      "path": "/webhooks/register",
-      "expected_status": 200,
-      "body": {
-        "url": "https://your-endpoint.com/webhook"
-      }
-    }
+    "get_pricing":     { "method": "GET",    "path": "/pricing/{state}/{county}", "params": ["deed_type"], "expected_status": 200 },
+    "list_orders":     { "method": "GET",    "path": "/orders", "params": ["status", "state", "date_from", "date_to", "client_reference"], "expected_status": 200 },
+    "order_history":   { "method": "GET",    "path": "/orders/history", "params": ["status", "state", "deed_type", "client_reference", "date_from", "date_to", "sort_by", "sort_dir", "limit", "offset"], "expected_status": 200 },
+    "get_order":       { "method": "GET",    "path": "/orders/{order_id}", "expected_status": 200 },
+    "create_order":    { "method": "POST",   "path": "/orders", "expected_status": 201 },
+    "update_status":   { "method": "PUT",    "path": "/orders/{order_id}/status", "admin_only": true, "expected_status": 200 },
+    "register_webhook":{ "method": "POST",   "path": "/webhooks/register", "expected_status": 201 },
+    "delete_webhook":  { "method": "DELETE", "path": "/webhooks/{webhook_id}", "expected_status": 200 },
+    "upload_document": { "url": "upload_url", "content_type": "multipart/form-data", "fields": ["file", "order_id", "custom_order_id"], "expected_status": 201 }
   }
 }

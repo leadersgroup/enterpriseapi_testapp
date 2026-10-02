@@ -1,209 +1,197 @@
 #!/usr/bin/env python3
+"""50Deeds Enterprise API v4.0 test suite (sandbox).
+
+Transport note: the v4.0 reference documents REST-style URLs
+(GET /functions/enterpriseApi/pricing/FL/Miami-Dade?deed_type=...), but Base44
+does not route sub-paths to a function -- those URLs return 404. Every call is a
+POST to the function root with the logical path/method in the body (_path,
+_method); GET query params go in the body too. Auth uses the documented
+Authorization: Bearer header.
+"""
+
+import json
+import os
+import random
+import string
+import sys
+import tempfile
+import time
 
 import requests
-import json
-import sys
 
-BASE_URL = "https://50-deeds-enterprise-testenv-385a4bcc.base44.app/api/functions/enterpriseApi"
-API_KEY = "c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a"
+HOST = os.environ.get("API_HOST", "https://50-deeds-enterprise-testenv-385a4bcc.base44.app")
+API_KEY = os.environ.get("API_KEY", "c24398ff06861986a415b4b44b89b0fc29caecb7f045113c797b20f086b3b87a")
+API_URL = f"{HOST}/functions/enterpriseApi"
+UPLOAD_URL = f"{HOST}/functions/uploadDocument"
+AUTH = {"Authorization": f"Bearer {API_KEY}"}
 
-HEADERS = {
-    "Content-Type": "application/json",
-}
+results = []
 
-def log_request(method, path, body=None):
-    """Log the request details."""
-    print(f"\n{'='*70}")
-    print(f"REQUEST: {method} {path}")
-    print(f"URL: {BASE_URL}")
-    print(f"Headers: Content-Type: application/json")
-    if body:
-        print(f"Body (with _api_key): {json.dumps(body, indent=2)}")
-    print('='*70)
 
-def log_response(response):
-    """Log the response details."""
-    print(f"\nRESPONSE Status: {response.status_code}")
-    print(f"Headers: {dict(response.headers)}")
+def show(res):
+    print(f"\nRESPONSE {res.status_code}")
     try:
-        parsed = response.json()
-        print(f"Body: {json.dumps(parsed, indent=2)}")
-    except:
-        print(f"Body: {response.text}")
+        print(json.dumps(res.json(), indent=2))
+    except ValueError:
+        print(res.text)
 
-def check_status(response, expected_status, test_name):
-    """Check if response status matches expected."""
-    passed = response.status_code == expected_status
-    status = "✓ PASS" if passed else "✗ FAIL"
-    print(f"\n{status}: {test_name}")
-    print(f"  Expected: {expected_status}, Got: {response.status_code}")
-    return passed
 
-def test_get_pricing():
-    """Test: Get Pricing (FL/Walton - has specific pricing)"""
-    api_path = "/pricing/FL/Walton"
-    log_request("GET", api_path)
+def api(method, api_path, **params):
+    body = {"_path": api_path, "_method": method, **params}
+    print(f"\n{'=' * 70}\nREQUEST: {method} {api_path}\nPOST {API_URL}")
+    print(f"Authorization: Bearer ***{API_KEY[-8:]}")
+    print(json.dumps(body, indent=2))
+    res = requests.post(API_URL, json=body, headers=AUTH, timeout=30)
+    show(res)
+    return res
+
+
+def body_of(res):
     try:
-        payload = {
-            "_path": api_path,
-            "_method": "GET",
-            "_api_key": API_KEY,
-            "deed_type": "Transfer to Individual: FinCEN non-reportable",
-        }
-        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
-        log_response(response)
-        # Should return 200 with Walton pricing
-        return check_status(response, 200, "Get Pricing - Should return 200 with Walton pricing")
-    except requests.exceptions.RequestException as e:
-        print(f"✗ FAIL: Get Pricing - Request failed")
-        print(f"Error: {str(e)}")
-        return False
+        return res.json()
+    except ValueError:
+        return {}
 
-def test_list_orders():
-    """Test: List Orders"""
-    api_path = "/orders"
-    log_request("GET", api_path)
+
+def check(name, res, expected, extra=True):
+    ok = res.status_code in expected and bool(extra)
+    print(f"\n{'✓ PASS' if ok else '✗ FAIL'}: {name} (expected {'/'.join(map(str, expected))}, got {res.status_code})")
+    results.append((name, ok))
+    return ok
+
+
+def step(name, fn):
     try:
-        payload = {
-            "_path": api_path,
-            "_method": "GET",
-            "_api_key": API_KEY,
-        }
-        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
-        log_response(response)
-        return check_status(response, 200, "List Orders - Should return 200")
-    except requests.exceptions.RequestException as e:
-        print(f"✗ FAIL: List Orders - Request failed")
-        print(f"Error: {str(e)}")
-        return False
+        fn()
+    except Exception as e:  # noqa: BLE001 - report and keep going
+        print(f"✗ FAIL: {name} - {e}")
+        results.append((name, False))
 
-def test_get_specific_order(order_id=None):
-    """Test: Get Specific Order"""
-    api_path = f"/orders/{order_id}" if order_id else "/orders/invalid-id"
-    log_request("GET", api_path)
-    try:
-        payload = {
-            "_path": api_path,
-            "_method": "GET",
-            "_api_key": API_KEY,
-        }
-        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
-        log_response(response)
-        return check_status(response, 200, "Get Specific Order - Should return 200")
-    except requests.exceptions.RequestException as e:
-        print(f"✗ FAIL: Get Specific Order - Request failed")
-        print(f"Error: {str(e)}")
-        return False
 
-def test_create_order():
-    """Test: Create Order"""
-    api_path = "/orders"
-    order_data = {
+def base_order(**overrides):
+    ref = "".join(random.choices(string.ascii_lowercase + string.digits, k=5))
+    order = {
+        "deed_type": "Individual to trust",
         "property_address": "123 Main St, Miami, FL 33101",
-        "grantor_name": "John Doe",
-        "grantee_name": "Jane Doe",
+        "grantor_name": "John Doe, individually",
+        "grantee_name": "John Doe, Trustee of the Doe Family Trust dated 01/15/2026",
         "contact_name": "John Doe",
-        "deed_type": "Transfer from entity to Trust: FinCEN reportable",
+        "contact_email": "test@example.com",
         "county": "Miami-Dade",
         "state": "FL",
-        "contact_email": "test@example.com",
-        "additional_instructions": "Test order",
-        "attachments": [
-            {
-                "file_url": "https://example.com/documents/deed_draft.pdf",
-                "file_name": "deed_draft.pdf",
-                "file_size": 102400,
-                "uploaded_date": "2026-03-06T14:30:00Z",
-            }
-        ],
+        "additional_instructions": "Automated sandbox test order",
+        "client_reference": f"TEST-{int(time.time() * 1000)}-{ref}",
     }
-    log_request("POST", api_path, order_data)
-    try:
-        payload = {
-            "_path": api_path,
-            "_method": "POST",
-            "_api_key": API_KEY,
-            **order_data,
-        }
-        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
-        log_response(response)
-        return check_status(response, 201, "Create Order - Should return 201")
-    except requests.exceptions.RequestException as e:
-        print(f"✗ FAIL: Create Order - Request failed")
-        print(f"Error: {str(e)}")
-        return False
+    order.update(overrides)
+    return order
 
-def test_register_webhook():
-    """Test: Register Webhook"""
-    api_path = "/webhooks/register"
-    webhook_data = {
-        "url": "https://your-endpoint.com/webhook",
-    }
-    log_request("POST", api_path, webhook_data)
-    try:
-        payload = {
-            "_path": api_path,
-            "_method": "POST",
-            "_api_key": API_KEY,
-            **webhook_data,
-        }
-        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
-        log_response(response)
-        return check_status(response, 201, "Register Webhook - Should return 201")
-    except requests.exceptions.RequestException as e:
-        print(f"✗ FAIL: Register Webhook - Request failed")
-        print(f"Error: {str(e)}")
-        return False
 
 def main():
-    """Run all tests."""
-    print(f"\n{'█'*70}")
-    print("Enterprise API Test Suite")
-    print(f"{'█'*70}")
+    print(f"\n{'█' * 70}\n50Deeds Enterprise API v4.0 Test Suite\nHost: {HOST}\n{'█' * 70}")
+    state = {"order_id": None, "webhook_id": None}
 
-    results = []
-    order_id = None
+    def pricing_legacy():
+        r = api("GET", "/pricing/FL/Miami-Dade",
+                deed_type="Transfer from entity to Trust: FinCEN reportable (Legacy)")
+        check("Pricing: FL/Miami-Dade, legacy reportable", r, [200], body_of(r).get("fincen_required") is True)
 
-    # Run tests
-    results.append(("Get Pricing (FL/Miami-Dade)", test_get_pricing()))
+    def pricing_new():
+        r = api("GET", "/pricing/FL/Walton", deed_type="Individual to individual")
+        check("Pricing: FL/Walton, Individual to individual", r, [200],
+              isinstance(body_of(r).get("total"), (int, float)))
 
-    # Test List Orders and capture an order ID
-    list_orders_passed = test_list_orders()
-    results.append(("List Orders", list_orders_passed))
+    def list_orders():
+        r = api("GET", "/orders", state="FL")
+        check("List orders", r, [200], isinstance(body_of(r).get("orders"), list))
 
-    # Try to get an order ID for the next test
-    try:
-        payload = {
-            "_path": "/orders",
-            "_method": "GET",
-            "_api_key": API_KEY,
-        }
-        response = requests.post(BASE_URL, json=payload, headers=HEADERS, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("orders") and len(data["orders"]) > 0:
-                order_id = data["orders"][0]["id"]
-    except:
-        pass
+    def history():
+        r = api("GET", "/orders/history", limit=5, sort_by="created_date", sort_dir="desc")
+        check("Order history (paginated)", r, [200], "pagination" in body_of(r))
 
-    results.append(("Get Specific Order", test_get_specific_order(order_id)))
-    results.append(("Create Order", test_create_order()))
-    results.append(("Register Webhook", test_register_webhook()))
+    order = base_order()
 
-    # Summary
-    print(f"\n{'█'*70}")
-    print("TEST SUMMARY")
-    print(f"{'█'*70}")
-    for test_name, passed in results:
-        status = "✓" if passed else "✗"
-        print(f"{status} {test_name}")
+    def create():
+        r = api("POST", "/orders", **order)
+        if check("Create order (FL, no SSN)", r, [201], body_of(r).get("order", {}).get("id")):
+            state["order_id"] = body_of(r)["order"]["id"]
 
-    passed_count = sum(1 for _, passed in results if passed)
-    total_count = len(results)
-    print(f"\nTotal: {passed_count}/{total_count} passed")
-    print(f"{'█'*70}\n")
+    def lookup():
+        r = api("GET", "/orders", client_reference=order["client_reference"])
+        check("Lookup by client_reference", r, [200], len(body_of(r).get("orders", [])) == 1)
 
-    sys.exit(0 if passed_count == total_count else 1)
+    def get_order():
+        oid = state["order_id"] or "invalid-id"
+        r = api("GET", f"/orders/{oid}")
+        check("Get specific order", r, [200], body_of(r).get("id") == state["order_id"])
+
+    def upload_doc():
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
+            f.write(b"%PDF-1.4\n% 50deeds sandbox test\n")
+            tmp = f.name
+        print(f"\n{'=' * 70}\nREQUEST: POST {UPLOAD_URL} (multipart, order_id={state['order_id'] or '-'})")
+        try:
+            with open(tmp, "rb") as fh:
+                data = {"order_id": state["order_id"]} if state["order_id"] else {}
+                r = requests.post(UPLOAD_URL, headers=AUTH, timeout=60,
+                                  files={"file": ("test.pdf", fh, "application/pdf")}, data=data)
+        finally:
+            os.unlink(tmp)
+        show(r)
+        check("Upload document to order", r, [200, 201], body_of(r).get("file_url"))
+
+    ny = {"property_address": "500 5th Ave, New York, NY 10110", "county": "New York", "state": "NY"}
+
+    def ny_missing_ssn():
+        r = api("POST", "/orders", **base_order(**ny))
+        check("NY order without SSNs -> 400", r, [400], "ssn" in r.text.lower())
+
+    def ny_with_ssn():
+        r = api("POST", "/orders", **base_order(deed_type="Individual to company", grantor_ssn="123-45-6789",
+                                                grantee_ssn="987-65-4321", **ny))
+        check("NY order with SSNs", r, [201])
+
+    # deed_type is matched case-sensitively against the Order entity enum, which capitalizes
+    # "Trust to Individual", "Company to Trust" and "Company to Company".
+    def doc_casing():
+        r = api("POST", "/orders", **base_order(deed_type="Company to Trust"))
+        check('Capitalized deed_type "Company to Trust" accepted', r, [201])
+
+    def malformed():
+        r = api("POST", "/orders", deed_type="Individual to individual")
+        check("Malformed order -> 400", r, [400], body_of(r).get("error"))
+
+    def register_webhook():
+        r = api("POST", "/webhooks/register", url="https://example.com/webhooks/50deeds",
+                description="Automated test")
+        if check("Register webhook", r, [201], body_of(r).get("webhook", {}).get("id")):
+            state["webhook_id"] = body_of(r)["webhook"]["id"]
+
+    def delete_webhook():
+        r = api("DELETE", f"/webhooks/{state['webhook_id'] or 'wh_missing'}")
+        check("Delete webhook", r, [200], body_of(r).get("success") is True)
+
+    step("Pricing: FL/Miami-Dade, legacy reportable", pricing_legacy)
+    step("Pricing: FL/Walton, Individual to individual", pricing_new)
+    step("List orders", list_orders)
+    step("Order history (paginated)", history)
+    step("Create order (FL, no SSN)", create)
+    step("Lookup by client_reference", lookup)
+    step("Get specific order", get_order)
+    step("Upload document to order", upload_doc)
+    step("NY order without SSNs -> 400", ny_missing_ssn)
+    step("NY order with SSNs", ny_with_ssn)
+    step('Capitalized deed_type "Company to Trust" accepted', doc_casing)
+    step("Malformed order -> 400", malformed)
+    step("Register webhook", register_webhook)
+    step("Delete webhook", delete_webhook)
+
+    print(f"\n{'█' * 70}\nTEST SUMMARY\n{'█' * 70}")
+    for name, ok in results:
+        print(f"{'✓' if ok else '✗'} {name}")
+    passed = sum(1 for _, ok in results if ok)
+    print(f"\nTotal: {passed}/{len(results)} passed\n")
+    sys.exit(0 if passed == len(results) else 1)
+
 
 if __name__ == "__main__":
     main()
